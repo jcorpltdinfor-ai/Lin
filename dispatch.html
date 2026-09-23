@@ -18,6 +18,17 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111;overflow:hidden;}
 
+.leaflet-control-attribution { display: none !important; }
+
+#deadZone {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 22px;
+    background: rgba(0, 30, 60, 0.98); color: var(--saxo-blue);
+    font-size: 9.5px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; z-index: 10001;
+    border-top: 1px solid rgba(0, 163, 224, 0.3); pointer-events: auto;
+    user-select: none; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+}
+
 #statusToast { 
     position: absolute; top: -100px; left: 50%; transform: translateX(-50%); 
     background: rgba(0,30,60,0.95); color: #fff; padding: 14px 28px; 
@@ -76,7 +87,7 @@ input, select {
 }
 input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
-#speedHud { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
+#speedHud { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
 .blinking { animation: pulse 0.8s infinite; color: var(--saxo-red) !important; border-color: var(--saxo-red) !important; }
 
 #hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); }
@@ -115,7 +126,14 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 <div id="hoverBtn">≡</div>
 <div id="speedHud">0 KM/H</div>
 
+<div id="deadZone">POWERED BY ASSETGUARD</div>
+
 <div id="panel">
+  <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, var(--saxo-navy), var(--saxo-slate)); border: 1px solid rgba(0, 163, 224, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; font-weight: 800; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 11px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--saxo-blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span style="color: #fff;">log out</span>
+  </button>
+
   <div id="statusHeader" class="offline">GPS: SEARCHING</div>
   <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0 km/h</b></div>
   <div class="stat-row"><span>Area Speed:</span> <b id="areaLimit" style="color:var(--saxo-red)">-- km/h</b></div>
@@ -165,7 +183,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   </div>
 
   <div class="grid-2">
-    <button onclick="window.goToCar()" style="background:var(--saxo-navy)">CAR</button>
+    <button onclick="window.goToCar()" style="background:var(--saxo-navy)">VEHICLE</button>
     <button onclick="window.centerDestination()" class="btn-green">DEST</button>
   </div>
 
@@ -194,7 +212,9 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const carRef = ref(db,'cars/car_01');
+
+// Points directly to the database record path shown in your dashboard
+const recordRef = ref(db, 'RS-06593975');
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
@@ -220,31 +240,37 @@ const historyLayer = L.layerGroup().addTo(map);
 let lastPos=null, follow=true, routeLocked=false, activeLimit=null, mapRotationActive = false;
 let routeLine=null, destMarker=null, fenceCircle=null, lastPushTime = 0;
 
-window.sendPush = (msg) => {
+// --- UID-TARGETED PUSH NOTIFICATION SENDER ---
+window.sendPush = (msg, targetUid, vehicleName = 'Vehicle') => {
+    if (!targetUid) return;
     const now = Date.now();
     if (now - lastPushTime > 15000) {
         lastPushTime = now;
+        
+        // 1. Show Toast on Web Screen
         const toast = document.getElementById('statusToast');
         toast.innerText = msg.toUpperCase();
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 4000);
+
+        // 2. Trigger Targeted OneSignal Push Notification exclusively to this specific UID using external_id
+        fetch('https://onesignal.com/api/v1/notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Authorization': 'Basic ' + 'os_v2_app_' + 'myderenhkrhjnle2qh5522b7nfyg4jxrcxcumz4ybrmwgnqr3q3oxpqgj4626biadpowuvvx4fsthr72azwu6otyh4gkdvogefiyvqa'
+            },
+            body: JSON.stringify({
+                app_id: "66064891-a754-4e96-ac9a-81fbdd683f69",
+                include_aliases: {
+                    "external_id": [targetUid] // Targets ONLY the user matching this exact Firebase UID
+                },
+                headings: { "en": "🚨 ASSET ALERT" },
+                contents: { "en": `${msg.toUpperCase()} detected on ${vehicleName}!` }
+            })
+        }).catch(err => console.error("OneSignal Error:", err));
     }
 };
-
-// --- NATIVE POPUP RESTORE ---
-if ("geolocation" in navigator) {
-    navigator.geolocation.watchPosition(
-        (p) => {
-            const dateKey = new Date().toISOString().split('T')[0];
-            const coords = { lat: p.coords.latitude, lng: p.coords.longitude, ts: Date.now() };
-            const speed = (p.coords.speed * 3.6 || 0).toFixed(1);
-            update(carRef, { ...coords, speed: speed });
-            push(ref(db, `cars/car_01/history/${dateKey}`), coords);
-        },
-        (err) => console.error("GPS Error:", err),
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-    );
-}
 
 // --- ROTATION ---
 window.toggleRotation = () => {
@@ -281,7 +307,7 @@ async function updateAreaSpeed(lat, lng) {
 document.getElementById('historyBtn').onclick = () => {
     const d = document.getElementById('historyDate').value;
     if(!d) return;
-    onValue(ref(db, `cars/car_01/history/${d}`), (snap) => {
+    onValue(ref(db, `RS-06593975/history/${d}`), (snap) => {
         const val = snap.val();
         if(!val) return;
         historyLayer.clearLayers();
@@ -307,9 +333,18 @@ window.openAdminModal = (t, d, cb) => {
 window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
 
 // --- MAIN LISTENER ---
-onValue(carRef, snap => {
-    const data = snap.val(); if(!data) return;
-    const pos = [data.lat, data.lng];
+onValue(recordRef, snap => {
+    const data = snap.val(); 
+    if(!data) return;
+
+    // Pulls coordinates safely from nested 'lastLocation' structure
+    const lat = data.lastLocation ? data.lastLocation.lat : data.lat;
+    const lng = data.lastLocation ? data.lastLocation.lng : data.lng;
+    if (lat === undefined || lng === undefined) return;
+
+    const pos = [lat, lng];
+    const userUid = data.uid;             // Extracts unique UID: "E3ZenNgT7XUuyusNulzgiThG23l2"
+    const vehicleName = data.vehicle || "Vehicle"; // Extracts vehicle name: "KAU 528F"
 
     if(mapRotationActive && lastPos) {
         const bearing = (Math.atan2(pos[1] - lastPos[1], pos[0] - lastPos[0]) * 180 / Math.PI);
@@ -317,13 +352,13 @@ onValue(carRef, snap => {
     }
 
     carMarker.setLatLng(pos);
-    const spd = parseFloat(data.speed)||0;
+    const spd = parseFloat(data.speed) || 0;
     document.getElementById('spdVal').innerText = spd + " km/h";
     document.getElementById('speedHud').innerText = spd + " KM/H";
     
     if(activeLimit && spd > activeLimit) {
         document.getElementById('speedHud').classList.add("blinking");
-        window.sendPush("SPEED BREACH");
+        window.sendPush("SPEED BREACH", userUid, vehicleName);
     } else { document.getElementById('speedHud').classList.remove("blinking"); }
 
     if(data.geofence) {
@@ -331,10 +366,11 @@ onValue(carRef, snap => {
         else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
         const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
         fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
-        if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH");
+        if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", userUid, vehicleName);
     }
 
-    const online = (Date.now() - data.ts) < 15000;
+    const recordTimestamp = data.lastLocation?.timestamp || data.timestamp || Date.now();
+    const online = (Date.now() - recordTimestamp) < 15000;
     document.getElementById('statusHeader').className = online ? "online" : "offline";
     document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
@@ -362,7 +398,7 @@ window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLa
 window.searchPlace = () => {
     const q = document.getElementById('search').value;
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`).then(r=>r.json()).then(res=>{
-        if(res.length) update(carRef,{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
+        if(res.length) update(recordRef,{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
     });
 };
 async function drawRoute(car,dest){
@@ -381,9 +417,9 @@ window.secureSpeedSet = () => {
 };
 window.openSpeedClear = () => { window.openAdminModal("BYPASS", "Unlock?", () => { const i = document.getElementById('maxSpeedLimit'); i.disabled = false; i.value = ""; activeLimit = null; }); };
 window.secureAddFence = () => { if(lastPos) window.openAdminModal("FENCE", "Deploy?", () => { document.getElementById('fenceModal').style.display='flex'; }); };
-window.confirmFence = () => { update(carRef, {geofence:{lat:lastPos[0], lng:lastPos[1], radius:parseInt(document.getElementById('fenceInput').value)}}); document.getElementById('fenceModal').style.display='none'; };
-window.clearGeofence = () => { window.openAdminModal("REMOVE", "Kill fence?", () => { update(carRef, {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
-window.openSystemReset = () => { window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, 'cars/car_01'), {lat:0, lng:0, speed:0, ts:Date.now()}); location.reload(); }); };
+window.confirmFence = () => { update(recordRef, {geofence:{lat:lastPos[0], lng:lastPos[1], radius:parseInt(document.getElementById('fenceInput').value)}}); document.getElementById('fenceModal').style.display='none'; };
+window.clearGeofence = () => { window.openAdminModal("REMOVE", "Kill fence?", () => { update(recordRef, {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
+window.openSystemReset = () => { window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, 'RS-06593975/lastLocation'), {lat:0, lng:0, timestamp:Date.now()}); location.reload(); }); };
 
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
 document.getElementById('followBtn').onclick = function() { follow = !follow; this.innerText = `FOLLOW: ${follow?'ON':'OFF'}`; };
