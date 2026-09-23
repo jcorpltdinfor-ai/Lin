@@ -17,7 +17,6 @@
       appId: "66064891-a754-4e96-ac9a-81fbdd683f69",
       allowLocalhostAsSecureOrigin: true
     });
-    // Logs this browser's subscription ID to the console for easy copying
     console.log("Your Device Subscription ID:", OneSignal.User.PushSubscription.id);
   });
 </script>
@@ -252,7 +251,10 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const carRef = ref(db,'cars/car_01');
+
+// Isolate data path using active user's unique ID stored in localStorage during login
+const activeUid = localStorage.getItem("ag_active_uid") || "car_01";
+const carRef = ref(db, `cars/${activeUid}`);
 
 // Pre-fill target input from localStorage
 document.getElementById('targetSubIdInput').value = localStorage.getItem('target_subscription_id') || "";
@@ -297,19 +299,17 @@ window.sendPush = (msg) => {
     if (now - lastPushTime > 15000) {
         lastPushTime = now;
         
-        // 1. Show Toast on Web Screen
         const toast = document.getElementById('statusToast');
         toast.innerText = msg.toUpperCase();
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 4000);
 
-        // 2. Target specific Subscription ID from localStorage (or fallback to segment if empty)
         const targetSubId = localStorage.getItem('target_subscription_id') || "";
         
         const payload = {
             app_id: "66064891-a754-4e96-ac9a-81fbdd683f69",
             headings: { "en": "🚨 VEHICLE ALERT" },
-            contents: { "en": msg.toUpperCase() + " detected on car_01!" }
+            contents: { "en": msg.toUpperCase() + ` detected on user node (${activeUid})!` }
         };
 
         if (targetSubId) {
@@ -337,7 +337,7 @@ if ("geolocation" in navigator) {
             const coords = { lat: p.coords.latitude, lng: p.coords.longitude, ts: Date.now() };
             const speed = (p.coords.speed * 3.6 || 0).toFixed(1);
             update(carRef, { ...coords, speed: speed });
-            push(ref(db, `cars/car_01/history/${dateKey}`), coords);
+            push(ref(db, `cars/${activeUid}/history/${dateKey}`), coords);
         },
         (err) => console.error("GPS Error:", err),
         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
@@ -379,7 +379,7 @@ async function updateAreaSpeed(lat, lng) {
 document.getElementById('historyBtn').onclick = () => {
     const d = document.getElementById('historyDate').value;
     if(!d) return;
-    onValue(ref(db, `cars/car_01/history/${d}`), (snap) => {
+    onValue(ref(db, `cars/${activeUid}/history/${d}`), (snap) => {
         const val = snap.val();
         if(!val) return;
         historyLayer.clearLayers();
@@ -481,7 +481,7 @@ window.openSpeedClear = () => { window.openAdminModal("BYPASS", "Unlock?", () =>
 window.secureAddFence = () => { if(lastPos) window.openAdminModal("FENCE", "Deploy?", () => { document.getElementById('fenceModal').style.display='flex'; }); };
 window.confirmFence = () => { update(carRef, {geofence:{lat:lastPos[0], lng:lastPos[1], radius:parseInt(document.getElementById('fenceInput').value)}}); document.getElementById('fenceModal').style.display='none'; };
 window.clearGeofence = () => { window.openAdminModal("REMOVE", "Kill fence?", () => { update(carRef, {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
-window.openSystemReset = () => { window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, 'cars/car_01'), {lat:0, lng:0, speed:0, ts:Date.now()}); location.reload(); }); };
+window.openSystemReset = () => { window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `cars/${activeUid}`), {lat:0, lng:0, speed:0, ts:Date.now()}); location.reload(); }); };
 
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
 document.getElementById('followBtn').onclick = function() { follow = !follow; this.innerText = `FOLLOW: ${follow?'ON':'OFF'}`; };
