@@ -258,11 +258,12 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 <div id="deadZone">POWERED BY ASSETGUARD</div>
 
 <div id="panel">
-  <!-- MODERN BACK BUTTON -->
-  <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, var(--saxo-navy), var(--saxo-slate)); border: 1px solid rgba(0, 163, 224, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; font-weight: 800; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 11px;">
+  <!-- MODERN SESSION & LOGOUT BUTTON -->
+  <button onclick="window.location.href='index.html'" style="background: linear-gradient(135deg, var(--saxo-navy), var(--saxo-slate)); border: 1px solid rgba(0, 163, 224, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; font-weight: 800; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 10px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--saxo-blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       <span style="color: #fff;">log out</span>
   </button>
+  <div id="sessionUserBadge" style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); text-align: center; margin-bottom: 12px; background: rgba(0,163,224,0.08); padding: 4px; border-radius: 6px;">SESSION: LOADING...</div>
 
   <div id="statusHeader" class="offline">GPS: SEARCHING</div>
   <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
@@ -361,7 +362,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- ISOLATED USER SESSION MANAGEMENT ---
+// --- STRICTLY ISOLATED USER SESSION MANAGEMENT ---
 const currentUserEmail = (
   localStorage.getItem('ag_user_email') || 
   localStorage.getItem('userEmail') || 
@@ -372,9 +373,13 @@ const currentUserEmail = (
 // Safe Firebase path sanitizing for email addresses (replaces forbidden characters like ., #, $, [, ] with underscores)
 const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
 
-// Scoped LocalStorage keys per user email
+// Display session user badge in UI
+document.getElementById('sessionUserBadge').innerText = `SESSION: ${currentUserEmail}`;
+
+// Scoped LocalStorage keys per user email for complete multi-account isolation
 const STORAGE_FLEET_KEY = `ag_fleet_vehicles_${safeEmail}`;
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
+const STORAGE_ACTIVE_UID_KEY = `ag_active_uid_${safeEmail}`;
 
 let fleet = JSON.parse(localStorage.getItem(STORAGE_FLEET_KEY) || '[]');
 let selectedCarName = localStorage.getItem(STORAGE_SELECTED_KEY) || (fleet[0] ? fleet[0].name : "");
@@ -544,6 +549,7 @@ window.requestRemoveFleetCar = (name) => {
         } else if(fleet.length === 0) {
             selectedCarName = "";
             localStorage.removeItem(STORAGE_SELECTED_KEY);
+            localStorage.removeItem(STORAGE_ACTIVE_UID_KEY);
             renderFleetUI();
         } else {
             renderFleetUI();
@@ -556,7 +562,7 @@ window.requestRemoveFleetCar = (name) => {
 window.selectCar = (name) => {
     selectedCarName = name;
     localStorage.setItem(STORAGE_SELECTED_KEY, name);
-    localStorage.setItem('ag_active_uid', name);
+    localStorage.setItem(STORAGE_ACTIVE_UID_KEY, name);
     
     if(activeMarker) { map.removeLayer(activeMarker); activeMarker = null; }
     if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
