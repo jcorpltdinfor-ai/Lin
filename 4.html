@@ -486,10 +486,10 @@ window.requestAddFleetVehicle = () => {
         return;
     }
 
-    const existingCar = fleet.find(c => c.subId && (c.subId.toLowerCase() === subId.toLowerCase() || c.subId.toLowerCase().includes(subId.toLowerCase()) || subId.toLowerCase().includes('940bcfac') && subId.toLowerCase().includes('940bcfac')));
-    if (existingCar || fleet.some(c => c.subId && c.subId.toLowerCase().includes(subId.toLowerCase()))) {
-        const conflictCar = existingCar || fleet.find(c => c.subId.toLowerCase().includes(subId.toLowerCase()));
-        window.showAlertModal("REGISTRATION BLOCKED", `This Subscription ID is already associated with vehicle (${conflictCar.name}).`);
+    // FIXED: Strict exact comparison to prevent false positive substring matches against existing cars
+    const existingCarBySubId = fleet.find(c => c.subId && c.subId.toLowerCase() === subId.toLowerCase());
+    if (existingCarBySubId) {
+        window.showAlertModal("REGISTRATION BLOCKED", `This Subscription ID is already associated with vehicle (${existingCarBySubId.name}).`);
         return;
     }
 
@@ -499,7 +499,7 @@ window.requestAddFleetVehicle = () => {
     }
 
     // Require nakuru1 password to add fleet
-    window.openAdminModal("AUTHORIZE REGISTRATION", `Enter apassword to register vehicle: ${name}`, () => {
+    window.openAdminModal("AUTHORIZE REGISTRATION", `Enter password to register vehicle: ${name}`, () => {
         fleet.push({ name, subId });
         localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
         document.getElementById('newCarName').value = "";
