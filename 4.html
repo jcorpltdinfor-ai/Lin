@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Master Tracker Pro | Signal Turbo V5.1 (Fleet Edition)</title>
+<title>Master Tracker Pro | Signal Turbo V5.2 (Fleet Edition)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -464,7 +464,7 @@ window.openAdminModal = (t, d, cb) => {
             cb(); 
             window.closeAdmin(); 
         } else { 
-            window.showAlertModal("ACCESS DENIED", "Incorrect security key (nakuru1 required).");
+            window.showAlertModal("ACCESS DENIED", "Incorrect password.");
         }
     };
 };
@@ -486,7 +486,6 @@ window.requestAddFleetVehicle = () => {
         return;
     }
 
-    // FIXED: Strict exact comparison to prevent false positive substring matches against existing cars
     const existingCarBySubId = fleet.find(c => c.subId && c.subId.toLowerCase() === subId.toLowerCase());
     if (existingCarBySubId) {
         window.showAlertModal("REGISTRATION BLOCKED", `This Subscription ID is already associated with vehicle (${existingCarBySubId.name}).`);
@@ -498,7 +497,6 @@ window.requestAddFleetVehicle = () => {
         return;
     }
 
-    // Require nakuru1 password to add fleet
     window.openAdminModal("AUTHORIZE REGISTRATION", `Enter password to register vehicle: ${name}`, () => {
         fleet.push({ name, subId });
         localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
@@ -506,6 +504,7 @@ window.requestAddFleetVehicle = () => {
         document.getElementById('newCarSubId').value = "";
 
         update(ref(db, `cars/${name}`), { subId });
+        syncFleetListeners();
         window.selectCar(name);
         window.showAlertModal("SUCCESS", `Vehicle ${name} successfully registered to fleet.`);
     });
@@ -522,11 +521,15 @@ window.requestRemoveFleetCar = (name) => {
             off(ref(db, `cars/${name}`));
             delete carListeners[name];
         }
+        delete carLatestData[name];
         fleet = fleet.filter(c => c.name !== name);
         localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
         
         if(selectedCarName === name && fleet.length > 0) {
             window.selectCar(fleet[0].name);
+        } else if(fleet.length === 0) {
+            selectedCarName = "";
+            renderFleetUI();
         } else {
             renderFleetUI();
         }
@@ -538,27 +541,48 @@ window.selectCar = (name) => {
     selectedCarName = name;
     localStorage.setItem('ag_selected_car', name);
     localStorage.setItem('ag_active_uid', name);
-    document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
-    setupFleetListeners();
-    renderFleetUI();
     
-    if(carLatestData[name]) {
-        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18);
-        document.getElementById('spdVal').innerText = (parseFloat(carLatestData[name].speed) || 0).toFixed(1) + " km/h";
-        document.getElementById('speedHud').innerText = (parseFloat(carLatestData[name].speed) || 0).toFixed(1) + " KM/H";
+    // Instantly update UI and active target banner
+    renderFleetUI();
+    document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
+    
+    // Check if live cached telemetry data exists for this specific vehicle
+    if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
+        const data = carLatestData[name];
+        const pos = [data.lat, data.lng];
+        const spd = (parseFloat(data.speed) || 0).toFixed(1);
+        
+        map.setView(pos, 18, { animate: true });
+        document.getElementById('spdVal').innerText = spd + " km/h";
+        document.getElementById('speedHud').innerText = spd + " KM/H";
+        
+        const online = (Date.now() - data.ts) < 15000;
+        document.getElementById('statusHeader').className = online ? "online" : "offline";
+        document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+    } else {
+        // Handle case where selected car has no GPS fix or data yet
+        document.getElementById('spdVal').innerText = "0.0 km/h";
+        document.getElementById('speedHud').innerText = "0.0 KM/H";
+        document.getElementById('statusHeader').className = "offline";
+        document.getElementById('statusHeader').innerText = "GPS: WAITING FOR SIGNAL";
+        window.showAlertModal("TARGET ACQUISITION", `Switched target to ${name}. Waiting for live GPS coordinates...`);
     }
 };
 
 window.focusCar = (name) => {
-    if(carLatestData[name]) {
-        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18);
+    if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
+        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18, { animate: true });
         follow = true;
         document.getElementById('followBtn').innerText = "FOLLOW: ON";
+    } else {
+        window.showAlertModal("SIGNAL LOST", `Vehicle ${name} has not reported GPS coordinates yet.`);
     }
 };
 
 window.fitAllCars = () => {
-    const points = Object.values(carLatestData).map(d => [d.lat, d.lng]);
+    const points = Object.values(carLatestData)
+        .filter(d => d && d.lat && d.lng)
+        .map(d => [d.lat, d.lng]);
     if(points.length > 0) {
         map.fitBounds(L.latLngBounds(points), {padding: [70, 70]});
         follow = false;
@@ -654,77 +678,75 @@ document.getElementById('historyBtn').onclick = () => {
 };
 window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// --- FIREBASE LISTENERS FOR ALL FLEET CARS ---
-function setupFleetListeners() {
-    Object.keys(carListeners).forEach(name => {
-        off(ref(db, `cars/${name}`));
-    });
-
+// --- BACKGROUND PERSISTENT LISTENERS FOR ALL FLEET CARS ---
+function syncFleetListeners() {
     fleet.forEach(car => {
-        const carRef = ref(db, `cars/${car.name}`);
-        carListeners[car.name] = onValue(carRef, snap => {
-            const data = snap.val();
-            if(!data) return;
-            carLatestData[car.name] = data;
+        if (!carListeners[car.name]) {
+            const carRef = ref(db, `cars/${car.name}`);
+            carListeners[car.name] = onValue(carRef, snap => {
+                const data = snap.val();
+                if(!data || !data.lat || !data.lng) return;
+                carLatestData[car.name] = data;
 
-            const pos = [data.lat, data.lng];
-            const spd = (parseFloat(data.speed) || 0).toFixed(1);
+                const pos = [data.lat, data.lng];
+                const spd = (parseFloat(data.speed) || 0).toFixed(1);
 
-            if(!carMarkers[car.name]) {
-                const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
-                carMarkers[car.name] = L.marker(pos, {icon: carIcon}).addTo(map)
-                    .bindTooltip(car.name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
-                    .bindPopup(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
-            } else {
-                carMarkers[car.name].setLatLng(pos);
-                carMarkers[car.name].setPopupContent(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
-            }
-
-            renderFleetUI();
-
-            if(car.name === selectedCarName) {
-                document.getElementById('spdVal').innerText = spd + " km/h";
-                document.getElementById('speedHud').innerText = spd + " KM/H";
-                
-                if(mapRotationActive && carMarkers[car.name]._lastPos) {
-                    const bearing = (Math.atan2(pos[1] - carMarkers[car.name]._lastPos[1], pos[0] - carMarkers[car.name]._lastPos[0]) * 180 / Math.PI);
-                    map.setBearing(bearing);
-                }
-                carMarkers[car.name]._lastPos = pos;
-
-                if(activeLimit && parseFloat(spd) > activeLimit) {
-                    document.getElementById('speedHud').classList.add("blinking");
-                    window.sendPush("SPEED BREACH", car.name);
-                } else { document.getElementById('speedHud').classList.remove("blinking"); }
-
-                if(data.geofence) {
-                    if(!fenceCircle) fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
-                    else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
-                    const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
-                    fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
-                    if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", car.name);
+                if(!carMarkers[car.name]) {
+                    const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+                    carMarkers[car.name] = L.marker(pos, {icon: carIcon}).addTo(map)
+                        .bindTooltip(car.name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+                        .bindPopup(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+                } else {
+                    carMarkers[car.name].setLatLng(pos);
+                    carMarkers[car.name].setPopupContent(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
                 }
 
-                const online = (Date.now() - data.ts) < 15000;
-                document.getElementById('statusHeader').className = online ? "online" : "offline";
-                document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+                renderFleetUI();
 
-                if(follow) map.panTo(pos);
-                
-                if(data.destination){
-                    const dPos = [data.destination.lat, data.destination.lng];
-                    if(!destMarker) destMarker = L.marker(dPos).addTo(map);
-                    destMarker.setLatLng(dPos);
-                    drawRoute(pos, dPos);
-                    if(routeLocked) { 
-                        follow = false;
-                        document.getElementById('followBtn').innerText = "FOLLOW: OFF";
-                        map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]}); 
+                if(car.name === selectedCarName) {
+                    document.getElementById('spdVal').innerText = spd + " km/h";
+                    document.getElementById('speedHud').innerText = spd + " KM/H";
+                    
+                    if(mapRotationActive && carMarkers[car.name]._lastPos) {
+                        const bearing = (Math.atan2(pos[1] - carMarkers[car.name]._lastPos[1], pos[0] - carMarkers[car.name]._lastPos[0]) * 180 / Math.PI);
+                        map.setBearing(bearing);
                     }
+                    carMarkers[car.name]._lastPos = pos;
+
+                    if(activeLimit && parseFloat(spd) > activeLimit) {
+                        document.getElementById('speedHud').classList.add("blinking");
+                        window.sendPush("SPEED BREACH", car.name);
+                    } else { document.getElementById('speedHud').classList.remove("blinking"); }
+
+                    if(data.geofence) {
+                        if(!fenceCircle) fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
+                        else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
+                        const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
+                        fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
+                        if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", car.name);
+                    }
+
+                    const online = (Date.now() - data.ts) < 15000;
+                    document.getElementById('statusHeader').className = online ? "online" : "offline";
+                    document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+
+                    if(follow) map.panTo(pos);
+                    
+                    if(data.destination){
+                        const dPos = [data.destination.lat, data.destination.lng];
+                        if(!destMarker) destMarker = L.marker(dPos).addTo(map);
+                        destMarker.setLatLng(dPos);
+                        drawRoute(pos, dPos);
+                        if(routeLocked) { 
+                            follow = false;
+                            document.getElementById('followBtn').innerText = "FOLLOW: OFF";
+                            map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]}); 
+                        }
+                    }
+                    updateAreaSpeed(pos[0], pos[1]);
                 }
-                updateAreaSpeed(pos[0], pos[1]);
-            }
-        });
+            });
+        }
     });
 }
 
@@ -772,7 +794,7 @@ document.getElementById('lockRouteBtn').onclick = function() {
     if(routeLocked && selectedCarName && carLatestData[selectedCarName] && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]}); }
 };
 
-setupFleetListeners();
+syncFleetListeners();
 renderFleetUI();
 if(selectedCarName && carLatestData[selectedCarName]) {
     map.setView([carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], 18);
