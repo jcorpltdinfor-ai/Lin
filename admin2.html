@@ -234,13 +234,12 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 <div id="panel">
   <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 12px;">
       <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;" id="sessionUserBadge">SESSION: ...</div>
-      <button onclick="window.location.href='index.html'" title="Log Out" style="width: auto; padding: 5px 9px; font-size: 9.5px; font-weight: 700; background: rgba(255,90,95,0.12); color: var(--saxo-red); border: 1px solid rgba(255,90,95,0.3); border-radius: 6px; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: 0.2s;">
+      <button onclick="window.location.href='admin.html'" title="Log Out" style="width: auto; padding: 5px 9px; font-size: 9.5px; font-weight: 700; background: rgba(255,90,95,0.12); color: var(--saxo-red); border: 1px solid rgba(255,90,95,0.3); border-radius: 6px; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: 0.2s;">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           <span>Log Out</span>
       </button>
   </div>
 
-  <!-- Status header is now a clean, non-clickable real-time indicator -->
   <div id="statusHeader" class="offline">FLEET: STANDBY</div>
   
   <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
@@ -649,7 +648,6 @@ document.getElementById('historyBtn').onclick = () => {
 };
 window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// Auto-discovers and syncs all fleet units in real-time
 function initFirebaseSync() {
     const carsRef = ref(db, `users/${safeEmail}/cars`);
     onValue(carsRef, (snapshot) => {
