@@ -361,8 +361,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let fleet = JSON.parse(localStorage.getItem('ag_fleet_vehicles') || '[]');
-let selectedCarName = localStorage.getItem('ag_selected_car') || (fleet[0] ? fleet[0].name : "");
+// --- ISOLATED USER SESSION MANAGEMENT ---
+const currentUserEmail = (
+  localStorage.getItem('ag_user_email') || 
+  localStorage.getItem('userEmail') || 
+  localStorage.getItem('currentUserEmail') || 
+  'default_user'
+).trim().toLowerCase();
+
+// Safe Firebase path sanitizing for email addresses (replaces forbidden characters like ., #, $, [, ] with underscores)
+const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
+
+// Scoped LocalStorage keys per user email
+const STORAGE_FLEET_KEY = `ag_fleet_vehicles_${safeEmail}`;
+const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
+
+let fleet = JSON.parse(localStorage.getItem(STORAGE_FLEET_KEY) || '[]');
+let selectedCarName = localStorage.getItem(STORAGE_SELECTED_KEY) || (fleet[0] ? fleet[0].name : "");
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
@@ -432,7 +447,7 @@ window.sendPush = (msg, targetName = selectedCarName) => {
     }
 };
 
-// --- NATIVE GEOLOCATION TRANSMISSION ---
+// --- NATIVE GEOLOCATION TRANSMISSION (ISOLATED TO USER) ---
 if ("geolocation" in navigator) {
     navigator.geolocation.watchPosition(
         (p) => {
@@ -443,8 +458,8 @@ if ("geolocation" in navigator) {
             const subId = currentCarObj ? currentCarObj.subId : window.currentDeviceSubId;
             
             if (selectedCarName) {
-                update(ref(db, `cars/${selectedCarName}`), { ...coords, speed: speedVal, subId });
-                push(ref(db, `cars/${selectedCarName}/history/${dateKey}`), { ...coords, speed: speedVal });
+                update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), { ...coords, speed: speedVal, subId });
+                push(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${dateKey}`), { ...coords, speed: speedVal });
             }
         },
         (err) => console.error("GPS Error:", err),
@@ -469,7 +484,7 @@ window.openAdminModal = (t, d, cb) => {
 };
 window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
 
-// --- FLEET REGISTRATION WITH NAKURU1 PROTECTION & VALIDATION ---
+// --- FLEET REGISTRATION (SCOPED TO ISOLATED USER) ---
 window.requestAddFleetVehicle = () => {
     const name = document.getElementById('newCarName').value.trim().toUpperCase();
     const subId = document.getElementById('newCarSubId').value.trim();
@@ -498,18 +513,18 @@ window.requestAddFleetVehicle = () => {
 
     window.openAdminModal("AUTHORIZE REGISTRATION", `Enter password to register vehicle: ${name}`, () => {
         fleet.push({ name, subId });
-        localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
+        localStorage.setItem(STORAGE_FLEET_KEY, JSON.stringify(fleet));
         document.getElementById('newCarName').value = "";
         document.getElementById('newCarSubId').value = "";
 
-        update(ref(db, `cars/${name}`), { subId });
+        update(ref(db, `users/${safeEmail}/cars/${name}`), { subId });
         syncFleetListeners();
         window.selectCar(name);
         window.showAlertModal("SUCCESS", `Vehicle ${name} successfully registered to fleet.`);
     });
 };
 
-// --- FLEET REMOVAL WITH NAKURU1 PROTECTION ---
+// --- FLEET REMOVAL ---
 window.requestRemoveFleetCar = (name) => {
     window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
         if(selectedCarName === name && activeMarker) {
@@ -517,17 +532,18 @@ window.requestRemoveFleetCar = (name) => {
             activeMarker = null;
         }
         if(carListeners[name]) {
-            off(ref(db, `cars/${name}`));
+            off(ref(db, `users/${safeEmail}/cars/${name}`));
             delete carListeners[name];
         }
         delete carLatestData[name];
         fleet = fleet.filter(c => c.name !== name);
-        localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
+        localStorage.setItem(STORAGE_FLEET_KEY, JSON.stringify(fleet));
         
         if(selectedCarName === name && fleet.length > 0) {
             window.selectCar(fleet[0].name);
         } else if(fleet.length === 0) {
             selectedCarName = "";
+            localStorage.removeItem(STORAGE_SELECTED_KEY);
             renderFleetUI();
         } else {
             renderFleetUI();
@@ -536,20 +552,18 @@ window.requestRemoveFleetCar = (name) => {
     });
 };
 
-// --- INSTANT VEHICLE SELECTOR & UI CLEANSE ---
+// --- VEHICLE SELECTOR & UI CLEANSE ---
 window.selectCar = (name) => {
     selectedCarName = name;
-    localStorage.setItem('ag_selected_car', name);
+    localStorage.setItem(STORAGE_SELECTED_KEY, name);
     localStorage.setItem('ag_active_uid', name);
     
-    // 1. Completely clear previous vehicle's map artifacts & overlays instantly
     if(activeMarker) { map.removeLayer(activeMarker); activeMarker = null; }
     if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
     if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
     if(fenceCircle) { map.removeLayer(fenceCircle); fenceCircle = null; }
     historyLayer.clearLayers();
 
-    // 2. Reset dashboard HUD values instantly to prevent lingering previous car data
     document.getElementById('spdVal').innerText = "0.0 km/h";
     document.getElementById('speedHud').innerText = "0.0 KM/H";
     document.getElementById('areaLimit').innerText = "-- km/h";
@@ -561,11 +575,9 @@ window.selectCar = (name) => {
     document.getElementById('statusHeader').className = "offline";
     document.getElementById('statusHeader').innerText = "GPS: SEARCHING";
 
-    // 3. Update fleet card selection states & active banner
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
-    // 4. Load cached telemetry data for the new car if available
     const data = carLatestData[name];
     if(data && data.lat && data.lng) {
         const pos = [data.lat, data.lng];
@@ -629,7 +641,7 @@ function renderFleetUI() {
     document.getElementById('fleetCountBadge').innerText = `${fleet.length} Unit${fleet.length === 1 ? '' : 's'}`;
 
     if(fleet.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">No registered vehicles found.</div>`;
+        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">No registered vehicles found for this account.</div>`;
         return;
     }
 
@@ -697,7 +709,7 @@ async function updateAreaSpeed(lat, lng) {
 document.getElementById('historyBtn').onclick = () => {
     const d = document.getElementById('historyDate').value;
     if(!d || !selectedCarName) return;
-    onValue(ref(db, `cars/${selectedCarName}/history/${d}`), (snap) => {
+    onValue(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${d}`), (snap) => {
         const val = snap.val();
         if(!val) return;
         historyLayer.clearLayers();
@@ -710,20 +722,18 @@ document.getElementById('historyBtn').onclick = () => {
 };
 window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// --- BACKGROUND PERSISTENT LISTENERS FOR ALL FLEET CARS ---
+// --- BACKGROUND ISOLATED LISTENERS FOR USER'S FLEET ---
 function syncFleetListeners() {
     fleet.forEach(car => {
         if (!carListeners[car.name]) {
-            const carRef = ref(db, `cars/${car.name}`);
+            const carRef = ref(db, `users/${safeEmail}/cars/${car.name}`);
             carListeners[car.name] = onValue(carRef, snap => {
                 const data = snap.val();
                 if(!data || !data.lat || !data.lng) return;
                 carLatestData[car.name] = data;
 
-                // Update roster UI in real time
                 renderFleetUI();
 
-                // If this is the currently selected vehicle, update map & hud in real time
                 if(car.name === selectedCarName) {
                     const pos = [data.lat, data.lng];
                     const spd = (parseFloat(data.speed) || 0).toFixed(1);
@@ -792,7 +802,7 @@ window.searchPlace = () => {
     const q = document.getElementById('search').value;
     if(!selectedCarName) return;
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`).then(r=>r.json()).then(res=>{
-        if(res.length) update(ref(db, `cars/${selectedCarName}`),{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
+        if(res.length) update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`),{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
     });
 };
 async function drawRoute(car,dest){
@@ -815,11 +825,11 @@ window.secureAddFence = () => { if(selectedCarName && carLatestData[selectedCarN
 window.confirmFence = () => { 
     if(!selectedCarName) return;
     const pos = carLatestData[selectedCarName];
-    if(pos) update(ref(db, `cars/${selectedCarName}`), {geofence:{lat:pos.lat, lng:pos.lng, radius:parseInt(document.getElementById('fenceInput').value)}}); 
+    if(pos) update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {geofence:{lat:pos.lat, lng:pos.lng, radius:parseInt(document.getElementById('fenceInput').value)}}); 
     document.getElementById('fenceModal').style.display='none'; 
 };
-window.clearGeofence = () => { if(selectedCarName) window.openAdminModal("REMOVE", "Kill fence?", () => { update(ref(db, `cars/${selectedCarName}`), {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
-window.openSystemReset = () => { if(selectedCarName) window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `cars/${selectedCarName}`), {lat:0, lng:0, speed:"0.0", ts:Date.now()}); location.reload(); }); };
+window.clearGeofence = () => { if(selectedCarName) window.openAdminModal("REMOVE", "Kill fence?", () => { update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
+window.openSystemReset = () => { if(selectedCarName) window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {lat:0, lng:0, speed:"0.0", ts:Date.now()}); location.reload(); }); };
 
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
 document.getElementById('followBtn').onclick = function() { follow = !follow; this.innerText = `FOLLOW: ${follow?'ON':'OFF'}`; };
