@@ -229,7 +229,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 <div id="hoverBtn">≡</div>
 <div id="speedHud">0.0 KM/H</div>
 
-<div id="deadZone">POWERED By— ASSETGUARD PRO</div>
+<div id="deadZone">ADMIN VIEW PORTAL — ASSETGUARD PRO</div>
 
 <div id="panel">
   <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 12px;">
@@ -299,7 +299,6 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
     <select id="mapStyle" onchange="window.switchMap(this.value)">
       <option value="googleTraffic" selected>Standard Traffic</option>
       <option value="esriWorld">Live Terrain</option>
-      <option value="dark">Stealth Night</option>
       <option value="googleSat">Satellite Alpha</option>
     </select>
   </div>
@@ -354,28 +353,9 @@ let fleet = [];
 let carLatestData = {};
 let selectedCarName = localStorage.getItem(STORAGE_SELECTED_KEY) || "";
 
-// Per-car state management storage helper
-const getCarState = (carName) => {
-    if (!carName) return { follow: true, routeLocked: false, activeLimit: null, limitVal: "", limitDisabled: false };
-    try {
-        const data = localStorage.getItem(`ag_car_state_${safeEmail}_${carName}`);
-        return data ? JSON.parse(data) : { follow: true, routeLocked: false, activeLimit: null, limitVal: "", limitDisabled: false };
-    } catch(e) {
-        return { follow: true, routeLocked: false, activeLimit: null, limitVal: "", limitDisabled: false };
-    }
-};
-
-const saveCarState = (carName, stateObj) => {
-    if (!carName) return;
-    localStorage.setItem(`ag_car_state_${safeEmail}_${carName}`, JSON.stringify(stateObj));
-};
-
-let currentCarState = getCarState(selectedCarName);
-
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
   googleSat: L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
-  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
   esriWorld: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
 };
 
@@ -391,7 +371,7 @@ const map = L.map('map',{
 
 const historyLayer = L.layerGroup().addTo(map);
 
-let mapRotationActive = false;
+let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = false;
 let routeLine = null, destMarker = null, fenceCircle = null, activeMarker = null, lastPushTime = 0;
 
 window.showAlertModal = (title, desc) => {
@@ -477,83 +457,36 @@ window.requestAddFleetVehicle = () => {
         document.getElementById('newCarName').value = "";
         document.getElementById('newCarSubId').value = "";
 
-        // Instant Optimistic Local Update
-        carLatestData[name] = { subId: subId, speed: "0.0", ts: Date.now() };
-        if(!fleet.some(c => c.name === name)) {
-            fleet.push({ name: name, subId: subId });
-        }
-        window.selectCar(name);
-        renderFleetUI();
-
-        // Firebase Sync
         update(ref(db, `users/${safeEmail}/cars/${name}`), { subId });
+        window.selectCar(name);
         window.showAlertModal("SUCCESS", `Vehicle ${name} successfully registered to fleet.`);
     });
 };
 
 window.requestRemoveFleetCar = (name) => {
     window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
-        // Instant Optimistic Local Removal
-        fleet = fleet.filter(c => c.name !== name);
-        delete carLatestData[name];
-        localStorage.removeItem(`ag_car_state_${safeEmail}_${name}`);
-
-        if(selectedCarName === name) {
-            if(activeMarker) {
-                map.removeLayer(activeMarker);
-                activeMarker = null;
-            }
-            if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
-            if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
-            if(fenceCircle) { map.removeLayer(fenceCircle); fenceCircle = null; }
-            historyLayer.clearLayers();
-
-            if(fleet.length > 0) {
-                window.selectCar(fleet[0].name);
-            } else {
-                selectedCarName = "";
-                localStorage.removeItem(STORAGE_SELECTED_KEY);
-                document.getElementById('spdVal').innerText = "0.0 km/h";
-                document.getElementById('speedHud').innerText = "0.0 KM/H";
-                document.getElementById('areaLimit').innerText = "-- km/h";
-                document.getElementById('etaDist').innerText = "-- / --";
-                document.getElementById('maxSpeedLimit').value = "";
-                document.getElementById('maxSpeedLimit').disabled = false;
-                document.getElementById('statusHeader').className = "offline";
-                document.getElementById('statusHeader').innerText = "FLEET: STANDBY";
-                renderFleetUI();
-            }
-        } else {
+        if(selectedCarName === name && activeMarker) {
+            map.removeLayer(activeMarker);
+            activeMarker = null;
+        }
+        set(ref(db, `users/${safeEmail}/cars/${name}`), null);
+        
+        if(selectedCarName === name && fleet.length > 1) {
+            const remaining = fleet.filter(c => c.name !== name);
+            if(remaining.length > 0) window.selectCar(remaining[0].name);
+        } else if(fleet.length <= 1) {
+            selectedCarName = "";
+            localStorage.removeItem(STORAGE_SELECTED_KEY);
             renderFleetUI();
         }
-
-        // Firebase Sync
-        set(ref(db, `users/${safeEmail}/cars/${name}`), null);
         window.showAlertModal("VEHICLE REMOVED", `Unit ${name} has been removed from the active fleet.`);
     });
 };
 
-// INSTANT CAR SWITCHING & SETTINGS RESTORATION
 window.selectCar = (name) => {
-    // Save current active car's state before switching away
-    if (selectedCarName) {
-        saveCarState(selectedCarName, currentCarState);
-    }
-
     selectedCarName = name;
     localStorage.setItem(STORAGE_SELECTED_KEY, name);
     
-    // Load this car's saved state instantly
-    currentCarState = getCarState(name);
-
-    // Apply state instantly to DOM elements
-    document.getElementById('followBtn').innerText = `FOLLOW: ${currentCarState.follow ? 'ON' : 'OFF'}`;
-    document.getElementById('lockRouteBtn').innerText = `LOCK: ${currentCarState.routeLocked ? 'ON' : 'OFF'}`;
-    const speedInput = document.getElementById('maxSpeedLimit');
-    speedInput.value = currentCarState.limitVal;
-    speedInput.disabled = currentCarState.limitDisabled;
-    document.getElementById('speedSetBtn').innerText = currentCarState.limitDisabled ? "EDIT" : "SET";
-
     if(activeMarker) { map.removeLayer(activeMarker); activeMarker = null; }
     if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
     if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
@@ -564,6 +497,9 @@ window.selectCar = (name) => {
     document.getElementById('speedHud').innerText = "0.0 KM/H";
     document.getElementById('areaLimit').innerText = "-- km/h";
     document.getElementById('etaDist').innerText = "-- / --";
+    document.getElementById('maxSpeedLimit').value = "";
+    document.getElementById('maxSpeedLimit').disabled = false;
+    document.getElementById('speedSetBtn').innerText = "SET";
     document.getElementById('speedHud').classList.remove("blinking");
     document.getElementById('statusHeader').className = "offline";
     document.getElementById('statusHeader').innerText = "FLEET: STANDBY";
@@ -605,12 +541,10 @@ window.focusCar = (name) => {
     if(name !== selectedCarName) {
         window.selectCar(name);
     }
-    currentCarState.follow = true;
-    document.getElementById('followBtn').innerText = "FOLLOW: ON";
-    saveCarState(selectedCarName, currentCarState);
-
     if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
         map.setView([carLatestData[name].lat, carLatestData[name].lng], 18, { animate: true });
+        follow = true;
+        document.getElementById('followBtn').innerText = "FOLLOW: ON";
     } else {
         window.showAlertModal("SIGNAL LOST", `Vehicle ${name} has not reported GPS coordinates yet.`);
     }
@@ -622,9 +556,8 @@ window.fitAllCars = () => {
         .map(d => [d.lat, d.lng]);
     if(points.length > 0) {
         map.fitBounds(L.latLngBounds(points), {padding: [70, 70]});
-        currentCarState.follow = false;
+        follow = false;
         document.getElementById('followBtn').innerText = "FOLLOW: OFF";
-        saveCarState(selectedCarName, currentCarState);
     }
 };
 
@@ -635,7 +568,7 @@ function renderFleetUI() {
     document.getElementById('fleetCountBadge').innerText = `${fleet.length} Unit${fleet.length === 1 ? '' : 's'}`;
 
     if(fleet.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">No active fleet units registered.</div>`;
+        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">Scanning Firebase for active fleet units...</div>`;
         return;
     }
 
@@ -763,7 +696,7 @@ function initFirebaseSync() {
                 }
                 activeMarker._lastPos = pos;
 
-                if (currentCarState.activeLimit && parseFloat(spd) > currentCarState.activeLimit) {
+                if (activeLimit && parseFloat(spd) > activeLimit) {
                     document.getElementById('speedHud').classList.add("blinking");
                     window.sendPush("SPEED BREACH", selectedCarName);
                 } else { 
@@ -782,17 +715,16 @@ function initFirebaseSync() {
                 document.getElementById('statusHeader').className = online ? "online" : "offline";
                 document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
-                if (currentCarState.follow) map.panTo(pos);
+                if (follow) map.panTo(pos);
                 
                 if (data.destination) {
                     const dPos = [data.destination.lat, data.destination.lng];
                     if (!destMarker) destMarker = L.marker(dPos).addTo(map);
                     destMarker.setLatLng(dPos);
                     drawRoute(pos, dPos);
-                    if (currentCarState.routeLocked) { 
-                        currentCarState.follow = false;
+                    if (routeLocked) { 
+                        follow = false;
                         document.getElementById('followBtn').innerText = "FOLLOW: OFF";
-                        saveCarState(selectedCarName, currentCarState);
                         map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]}); 
                     }
                 }
@@ -803,7 +735,7 @@ function initFirebaseSync() {
 }
 
 window.switchMap = v => { Object.values(layers).forEach(l=>map.removeLayer(l)); layers[v].addTo(map); };
-window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); currentCarState.follow = false; document.getElementById('followBtn').innerText="FOLLOW: OFF"; saveCarState(selectedCarName, currentCarState); } };
+window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="FOLLOW: OFF"; } };
 window.searchPlace = () => {
     const q = document.getElementById('search').value;
     if(!selectedCarName) return;
@@ -820,46 +752,13 @@ async function drawRoute(car,dest){
         document.getElementById('etaDist').innerText = Math.round(d.routes[0].duration/60) + "m / " + (d.routes[0].distance/1000).toFixed(1) + "km";
     }
 }
-
 window.secureSpeedSet = () => {
     if(!selectedCarName) return;
     const i = document.getElementById('maxSpeedLimit');
-    if (i.disabled) {
-        window.openAdminModal("OVERRIDE", "Change limit?", () => { 
-            i.disabled = false; 
-            document.getElementById('speedSetBtn').innerText = "SET";
-            currentCarState.limitDisabled = false;
-            currentCarState.activeLimit = null;
-            saveCarState(selectedCarName, currentCarState);
-        });
-    } else { 
-        if (i.value) {
-            window.openAdminModal("LOCK", `Limit ${i.value} for ${selectedCarName}?`, () => { 
-                i.disabled = true; 
-                document.getElementById('speedSetBtn').innerText = "EDIT"; 
-                currentCarState.activeLimit = parseFloat(i.value);
-                currentCarState.limitVal = i.value;
-                currentCarState.limitDisabled = true;
-                saveCarState(selectedCarName, currentCarState);
-            });
-        }
-    }
+    if (i.disabled) window.openAdminModal("OVERRIDE", "Change limit?", () => { i.disabled = false; document.getElementById('speedSetBtn').innerText = "SET"; });
+    else { if (i.value) window.openAdminModal("LOCK", `Limit ${i.value} for ${selectedCarName}?`, () => { i.disabled = true; document.getElementById('speedSetBtn').innerText = "EDIT"; activeLimit = parseFloat(i.value); }); }
 };
-
-window.openSpeedClear = () => { 
-    if(selectedCarName) {
-        window.openAdminModal("BYPASS", "Unlock?", () => { 
-            const i = document.getElementById('maxSpeedLimit'); 
-            i.disabled = false; 
-            i.value = ""; 
-            currentCarState.activeLimit = null;
-            currentCarState.limitVal = "";
-            currentCarState.limitDisabled = false;
-            saveCarState(selectedCarName, currentCarState);
-        });
-    }
-};
-
+window.openSpeedClear = () => { if(selectedCarName) window.openAdminModal("BYPASS", "Unlock?", () => { const i = document.getElementById('maxSpeedLimit'); i.disabled = false; i.value = ""; activeLimit = null; }); };
 window.secureAddFence = () => { if(selectedCarName && carLatestData[selectedCarName]) window.openAdminModal("FENCE", `Deploy fence for ${selectedCarName}?`, () => { document.getElementById('fenceModal').style.display='flex'; }); };
 window.confirmFence = () => { 
     if(!selectedCarName) return;
@@ -871,26 +770,10 @@ window.clearGeofence = () => { if(selectedCarName) window.openAdminModal("REMOVE
 window.openSystemReset = () => { if(selectedCarName) window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {lat:0, lng:0, speed:"0.0", ts:Date.now()}); location.reload(); }); };
 
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
-
-// Instant Follow Toggle & Save State
-document.getElementById('followBtn').onclick = function() { 
-    currentCarState.follow = !currentCarState.follow; 
-    this.innerText = `FOLLOW: ${currentCarState.follow ? 'ON' : 'OFF'}`; 
-    saveCarState(selectedCarName, currentCarState);
-};
-
-// Instant Route Lock Toggle & Save State
+document.getElementById('followBtn').onclick = function() { follow = !follow; this.innerText = `FOLLOW: ${follow?'ON':'OFF'}`; };
 document.getElementById('lockRouteBtn').onclick = function() {
-    currentCarState.routeLocked = !currentCarState.routeLocked; 
-    this.innerText = `LOCK: ${currentCarState.routeLocked ? 'ON' : 'OFF'}`;
-    saveCarState(selectedCarName, currentCarState);
-
-    if(currentCarState.routeLocked && selectedCarName && carLatestData[selectedCarName] && destMarker) { 
-        currentCarState.follow = false; 
-        document.getElementById('followBtn').innerText = "FOLLOW: OFF"; 
-        saveCarState(selectedCarName, currentCarState);
-        map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]}); 
-    }
+    routeLocked = !routeLocked; this.innerText = `LOCK: ${routeLocked?'ON':'OFF'}`;
+    if(routeLocked && selectedCarName && carLatestData[selectedCarName] && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]}); }
 };
 
 initFirebaseSync();
