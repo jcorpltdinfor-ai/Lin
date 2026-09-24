@@ -105,7 +105,8 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 </div>
 
 <script>
-const DASHBOARD_URL = "4.html"; 
+// Updated redirection target to admin2.html
+const DASHBOARD_URL = "admin2.html"; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyDCkP7LTzdNcvZhp24rRsQirYDCcrsuvOA",
@@ -154,7 +155,7 @@ async function doLogin() {
     const userCredential = await auth.signInWithEmailAndPassword(email, pass);
     const user = userCredential.user;
     
-    // Store session details without tracking location
+    // Store session details
     localStorage.setItem("ag_active_uid", user.uid);
     localStorage.setItem("ag_session_active", "true");
     localStorage.setItem("ag_user_role", role);
