@@ -459,28 +459,56 @@ window.requestAddFleetVehicle = () => {
         document.getElementById('newCarName').value = "";
         document.getElementById('newCarSubId').value = "";
 
-        update(ref(db, `users/${safeEmail}/cars/${name}`), { subId });
+        // Instant Optimistic Local Update
+        carLatestData[name] = { subId: subId, speed: "0.0", ts: Date.now() };
+        if(!fleet.some(c => c.name === name)) {
+            fleet.push({ name: name, subId: subId });
+        }
         window.selectCar(name);
+        renderFleetUI();
+
+        // Firebase Sync
+        update(ref(db, `users/${safeEmail}/cars/${name}`), { subId });
         window.showAlertModal("SUCCESS", `Vehicle ${name} successfully registered to fleet.`);
     });
 };
 
 window.requestRemoveFleetCar = (name) => {
     window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
-        if(selectedCarName === name && activeMarker) {
-            map.removeLayer(activeMarker);
-            activeMarker = null;
-        }
-        set(ref(db, `users/${safeEmail}/cars/${name}`), null);
-        
-        if(selectedCarName === name && fleet.length > 1) {
-            const remaining = fleet.filter(c => c.name !== name);
-            if(remaining.length > 0) window.selectCar(remaining[0].name);
-        } else if(fleet.length <= 1) {
-            selectedCarName = "";
-            localStorage.removeItem(STORAGE_SELECTED_KEY);
+        // Instant Optimistic Local Removal
+        fleet = fleet.filter(c => c.name !== name);
+        delete carLatestData[name];
+
+        if(selectedCarName === name) {
+            if(activeMarker) {
+                map.removeLayer(activeMarker);
+                activeMarker = null;
+            }
+            if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
+            if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
+            if(fenceCircle) { map.removeLayer(fenceCircle); fenceCircle = null; }
+            historyLayer.clearLayers();
+
+            if(fleet.length > 0) {
+                window.selectCar(fleet[0].name);
+            } else {
+                selectedCarName = "";
+                localStorage.removeItem(STORAGE_SELECTED_KEY);
+                document.getElementById('spdVal').innerText = "0.0 km/h";
+                document.getElementById('speedHud').innerText = "0.0 KM/H";
+                document.getElementById('areaLimit').innerText = "-- km/h";
+                document.getElementById('etaDist').innerText = "-- / --";
+                document.getElementById('maxSpeedLimit').value = "";
+                document.getElementById('statusHeader').className = "offline";
+                document.getElementById('statusHeader').innerText = "FLEET: STANDBY";
+                renderFleetUI();
+            }
+        } else {
             renderFleetUI();
         }
+
+        // Firebase Sync
+        set(ref(db, `users/${safeEmail}/cars/${name}`), null);
         window.showAlertModal("VEHICLE REMOVED", `Unit ${name} has been removed from the active fleet.`);
     });
 };
@@ -570,7 +598,7 @@ function renderFleetUI() {
     document.getElementById('fleetCountBadge').innerText = `${fleet.length} Unit${fleet.length === 1 ? '' : 's'}`;
 
     if(fleet.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">Scanning Firebase for active fleet units...</div>`;
+        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">No active fleet units registered.</div>`;
         return;
     }
 
