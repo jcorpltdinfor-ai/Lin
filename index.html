@@ -219,9 +219,11 @@ async function doLogin() {
       return msg(`Access Denied. This account is registered as [${correctName}]. Please select the correct user type.`);
     }
 
+    // --- STORE SESSION DETAILS & EMAIL FOR STRICT ISOLATION ---
     localStorage.setItem("ag_active_uid", user.uid);
     localStorage.setItem("ag_session_active", "true");
     localStorage.setItem("ag_user_role", role);
+    localStorage.setItem("ag_user_email", email); // Crucial for database isolation
 
     let lat = null, lng = null, accuracy = null, gpsTimestamp = null;
     const currentDate = new Date().toISOString().split('T')[0];
@@ -347,6 +349,9 @@ async function doSignup() {
   try {
     const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
     const user = userCredential.user;
+
+    // Store email in localStorage for immediate session isolation
+    localStorage.setItem("ag_user_email", email);
 
     const userPayload = {
       uid: user.uid,
