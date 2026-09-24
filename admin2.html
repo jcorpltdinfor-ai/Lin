@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Master Tracker Pro | Signal Turbo V5.2 (Fleet Edition)</title>
+<title>AssetGuard Pro | Admin View-Only Portal</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -41,10 +41,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111;overflow:hidden;}
 
-/* Hide default Leaflet attribution */
 .leaflet-control-attribution { display: none !important; }
 
-/* Permanent Map Tooltip for Number Plates */
 .car-plate-tooltip {
     background: rgba(0, 30, 60, 0.92);
     color: #fff;
@@ -60,27 +58,13 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     border-top-color: rgba(0, 30, 60, 0.92);
 }
 
-/* Dead Zone Banner */
 #deadZone {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 22px;
-    background: rgba(0, 30, 60, 0.98);
-    color: var(--saxo-blue);
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10001;
-    border-top: 1px solid rgba(0, 163, 224, 0.3);
-    pointer-events: auto;
-    user-select: none;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 22px;
+    background: rgba(0, 30, 60, 0.98); color: var(--saxo-blue);
+    font-size: 9.5px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; display: flex; align-items: center;
+    justify-content: center; z-index: 10001; border-top: 1px solid rgba(0, 163, 224, 0.3);
+    pointer-events: auto; user-select: none; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
 }
 
 #statusToast { 
@@ -153,7 +137,6 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 #hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 #logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: #666; border: 1px inset rgba(0,0,0,0.05); }
 
-/* --- MODERN FLEET CARD UI --- */
 .fleet-card { 
     background: linear-gradient(135deg, rgba(28, 43, 57, 0.03), rgba(0, 30, 60, 0.06)); 
     border: 1px solid rgba(0, 163, 224, 0.2); 
@@ -193,22 +176,12 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 }
 .status-pill.live { background: rgba(0,192,125,0.15); color: #008752; }
 .status-pill.offline { background: rgba(255,90,95,0.15); color: var(--saxo-red); }
-.status-dot-mini {
-    width: 6px; height: 6px; border-radius: 50%;
-}
+.status-dot-mini { width: 6px; height: 6px; border-radius: 50%; }
 .live .status-dot-mini { background: var(--saxo-green); box-shadow: 0 0 6px var(--saxo-green); }
 .offline .status-dot-mini { background: var(--saxo-red); }
 
 .fleet-meta {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 4px;
-    font-size: 10px;
-    margin-bottom: 8px;
-    opacity: 0.85;
-    background: rgba(0,0,0,0.03);
-    padding: 6px 8px;
-    border-radius: 6px;
+    display: grid; grid-template-columns: 1fr; gap: 4px; font-size: 10px; margin-bottom: 8px; opacity: 0.85; background: rgba(0,0,0,0.03); padding: 6px 8px; border-radius: 6px;
 }
 </style>
 </head>
@@ -216,7 +189,6 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
 <div id="statusToast">SYSTEM ACTIVE</div>
 
-<!-- MODERN ADMIN / SECURITY MODAL -->
 <div id="adminModal" class="tactical-modal">
     <div class="modal-box">
         <h3 id="modalTitle" style="margin:0 0 10px 0; color:var(--saxo-red);">SECURITY CLEARANCE</h3>
@@ -229,7 +201,6 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
     </div>
 </div>
 
-<!-- MODERN INFO / ALERT MODAL -->
 <div id="infoModal" class="tactical-modal">
     <div class="modal-box" style="border-color: var(--saxo-blue);">
         <h3 id="infoTitle" style="margin:0 0 10px 0; color:var(--saxo-blue);">SYSTEM NOTICE</h3>
@@ -254,11 +225,9 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 <div id="hoverBtn">≡</div>
 <div id="speedHud">0.0 KM/H</div>
 
-<!-- DEAD ZONE OVERLAY -->
-<div id="deadZone">POWERED BY ASSETGUARD</div>
+<div id="deadZone">ADMIN VIEW PORTAL — ASSETGUARD PRO</div>
 
 <div id="panel">
-  <!-- MODERN COMPACT SESSION & LOG OUT HEADER -->
   <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 12px;">
       <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;" id="sessionUserBadge">SESSION: ...</div>
       <button onclick="window.location.href='index.html'" title="Log Out" style="width: auto; padding: 5px 9px; font-size: 9.5px; font-weight: 700; background: rgba(255,90,95,0.12); color: var(--saxo-red); border: 1px solid rgba(255,90,95,0.3); border-radius: 6px; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: 0.2s;">
@@ -267,7 +236,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
       </button>
   </div>
 
-  <div id="statusHeader" class="offline">GPS: SEARCHING</div>
+  <div id="statusHeader" class="offline">FLEET: STANDBY</div>
   <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
 
   <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0.0 km/h</b></div>
@@ -276,11 +245,10 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
   <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
 
-  <!-- ULTRA-MODERN FLEET REGISTRATION MODULE -->
   <div class="control-group" style="margin-bottom:10px;">
-    <span class="control-label">Register New Vehicle </span>
-    <input type="text" id="newCarName" placeholder="Number Plate " style="margin-bottom:6px; font-size:11px; text-transform: uppercase;">
-    <input type="text" id="newCarSubId" placeholder="Car ID" style="margin-bottom:8px; font-size:10px;">
+    <span class="control-label">Register New Vehicle</span>
+    <input type="text" id="newCarName" placeholder="Number Plate" style="margin-bottom:6px; font-size:11px; text-transform: uppercase;">
+    <input type="text" id="newCarSubId" placeholder="Car ID / Sub ID" style="margin-bottom:8px; font-size:10px;">
     <button onclick="window.requestAddFleetVehicle()" class="btn-primary" style="font-size:11px; padding:11px; box-shadow: 0 4px 12px rgba(0,163,224,0.2);">+ REGISTER VEHICLE</button>
   </div>
 
@@ -288,9 +256,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
       <span>Fleet Roster</span>
       <span id="fleetCountBadge" style="background:var(--saxo-navy); color:#fff; padding:1px 6px; border-radius:10px; font-size:9px;">0 Units</span>
   </div>
-  <div id="fleetListContainer" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; padding-right: 2px;">
-      <!-- Dynamically populated ultra-modern fleet cards -->
-  </div>
+  <div id="fleetListContainer" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; padding-right: 2px;"></div>
 
   <div class="control-group" style="margin-bottom:8px;">
     <span class="control-label">Tactical Orientation</span>
@@ -349,7 +315,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   <button onclick="window.searchPlace()" class="btn-primary" style="margin-bottom:5px;">INITIATE ROUTE</button>
   <button onclick="window.openSystemReset()" style="background:var(--saxo-red); font-size:9px; opacity:0.6;">SYSTEM RESET</button>
   
-  <div id="logDisplay">Fleet Engine Initialized.</div>
+  <div id="logDisplay">Admin View Portal Initialized.</div>
 </div>
 
 <script type="module">
@@ -364,7 +330,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// --- STRICTLY ISOLATED USER SESSION MANAGEMENT ---
 const currentUserEmail = (
   localStorage.getItem('ag_user_email') || 
   localStorage.getItem('userEmail') || 
@@ -372,13 +337,9 @@ const currentUserEmail = (
   'default_user'
 ).trim().toLowerCase();
 
-// Safe Firebase path sanitizing for email addresses
 const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
-
-// Display session user badge in UI
 document.getElementById('sessionUserBadge').innerText = currentUserEmail;
 
-// Scoped LocalStorage keys per user email for complete multi-account isolation
 const STORAGE_FLEET_KEY = `ag_fleet_vehicles_${safeEmail}`;
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
 const STORAGE_ACTIVE_UID_KEY = `ag_active_uid_${safeEmail}`;
@@ -454,7 +415,6 @@ window.sendPush = (msg, targetName = selectedCarName) => {
     }
 };
 
-// --- ADMIN HUB WITH NAKURU1 PASSWORD PROTECTION ---
 window.openAdminModal = (t, d, cb) => {
     document.getElementById('modalTitle').innerText = t;
     document.getElementById('modalDesc').innerText = d;
@@ -471,7 +431,6 @@ window.openAdminModal = (t, d, cb) => {
 };
 window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
 
-// --- FLEET REGISTRATION (SCOPED TO ISOLATED USER) ---
 window.requestAddFleetVehicle = () => {
     const name = document.getElementById('newCarName').value.trim().toUpperCase();
     const subId = document.getElementById('newCarSubId').value.trim();
@@ -484,12 +443,6 @@ window.requestAddFleetVehicle = () => {
     const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if(!subId || subId.length !== 36 || !uuidV4Regex.test(subId)) {
         window.showAlertModal("REGISTRATION BLOCKED", "Invalid OneSignal Subscription ID format or length. A valid 36-character UUID is strictly required.");
-        return;
-    }
-
-    const existingCarBySubId = fleet.find(c => c.subId && c.subId.toLowerCase() === subId.toLowerCase());
-    if (existingCarBySubId) {
-        window.showAlertModal("REGISTRATION BLOCKED", `This Subscription ID is already associated with vehicle (${existingCarBySubId.name}).`);
         return;
     }
 
@@ -511,7 +464,6 @@ window.requestAddFleetVehicle = () => {
     });
 };
 
-// --- FLEET REMOVAL ---
 window.requestRemoveFleetCar = (name) => {
     window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
         if(selectedCarName === name && activeMarker) {
@@ -540,7 +492,6 @@ window.requestRemoveFleetCar = (name) => {
     });
 };
 
-// --- VEHICLE SELECTOR & UI CLEANSE ---
 window.selectCar = (name) => {
     selectedCarName = name;
     localStorage.setItem(STORAGE_SELECTED_KEY, name);
@@ -561,7 +512,7 @@ window.selectCar = (name) => {
     document.getElementById('speedSetBtn').innerText = "SET";
     document.getElementById('speedHud').classList.remove("blinking");
     document.getElementById('statusHeader').className = "offline";
-    document.getElementById('statusHeader').innerText = "GPS: SEARCHING";
+    document.getElementById('statusHeader').innerText = "FLEET: STANDBY";
 
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
@@ -594,7 +545,7 @@ window.selectCar = (name) => {
         }
         updateAreaSpeed(pos[0], pos[1]);
     } else {
-        window.showAlertModal("TARGET ACQUISITION", `Switched target to ${name}. Waiting for live GPS coordinates...`);
+        window.showAlertModal("TARGET ACQUISITION", `Switched target to ${name}. Waiting for live vehicle GPS coordinates...`);
     }
 };
 
@@ -662,7 +613,6 @@ function renderFleetUI() {
     });
 }
 
-// --- ROTATION ---
 window.toggleRotation = () => {
     mapRotationActive = !mapRotationActive;
     const btn = document.getElementById('rotateBtn');
@@ -673,7 +623,6 @@ window.toggleRotation = () => {
 
 window.resetNorth = () => { mapRotationActive = false; map.setBearing(0); document.getElementById('rotateBtn').innerText = "MAP: FIXED"; };
 
-// --- SPEED ENGINE ---
 async function updateAreaSpeed(lat, lng) {
     try {
         const query = `[out:json];way(around:35, ${lat}, ${lng})[highway];out tags;`;
@@ -693,7 +642,6 @@ async function updateAreaSpeed(lat, lng) {
     } catch(e) { document.getElementById('areaLimit').innerText = "50.0 km/h"; }
 }
 
-// --- HISTORY ---
 document.getElementById('historyBtn').onclick = () => {
     const d = document.getElementById('historyDate').value;
     if(!d || !selectedCarName) return;
@@ -710,7 +658,6 @@ document.getElementById('historyBtn').onclick = () => {
 };
 window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// --- BACKGROUND ISOLATED LISTENERS FOR USER'S FLEET ---
 function syncFleetListeners() {
     fleet.forEach(car => {
         if (!carListeners[car.name]) {
@@ -782,7 +729,6 @@ function syncFleetListeners() {
     });
 }
 
-// --- UI UTILS ---
 window.switchMap = v => { Object.values(layers).forEach(l=>map.removeLayer(l)); layers[v].addTo(map); };
 window.goToCar = () => { if(selectedCarName && carLatestData[selectedCarName]) { map.setView([carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], 18); follow = true; document.getElementById('followBtn').innerText="FOLLOW: ON"; } };
 window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="FOLLOW: OFF"; } };
