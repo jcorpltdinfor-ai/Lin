@@ -104,11 +104,10 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 #statusHeader { 
     font-weight: 800; padding: 10px; border-radius: 8px; text-align: center; 
     margin-bottom: 12px; color: #fff; font-size: 11px; text-transform: uppercase; 
-    letter-spacing: 1.1px; cursor: pointer; transition: 0.2s; user-select: none;
+    letter-spacing: 1.1px; cursor: default; user-select: none;
 }
-#statusHeader:hover { filter: brightness(1.1); transform: scale(1.01); }
-.online { background:var(--saxo-green); box-shadow: 0 0 15px var(--saxo-green); }
-.offline { background:var(--saxo-red); }
+.online { background: var(--saxo-green); box-shadow: 0 0 15px rgba(0,192,125,0.4); }
+.offline { background: var(--saxo-red); }
 
 .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
 .stat-row b { color: var(--saxo-blue); }
@@ -241,7 +240,9 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
       </button>
   </div>
 
-  <div id="statusHeader" class="offline" onclick="window.forceRefreshSignal()" title="Click to instantly re-sync/refresh fleet signal">signal lost: click here to refresh</div>
+  <!-- Status header is now a clean, non-clickable real-time indicator -->
+  <div id="statusHeader" class="offline">FLEET: STANDBY</div>
+  
   <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
 
   <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0.0 km/h</b></div>
@@ -335,7 +336,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Robust check across all common LocalStorage keys for logged-in user email
 const getStoredEmail = () => {
     const keys = ['ag_user_email', 'userEmail', 'currentUserEmail', 'email', 'logged_user', 'user', 'admin_email', 'username', 'account_email'];
     for (let k of keys) {
@@ -381,15 +381,6 @@ window.showAlertModal = (title, desc) => {
     document.getElementById('infoTitle').innerText = title;
     document.getElementById('infoDesc').innerText = desc;
     document.getElementById('infoModal').style.display = 'flex';
-};
-
-// Instant Signal / Force Refresh button action
-window.forceRefreshSignal = () => {
-    const toast = document.getElementById('statusToast');
-    toast.innerText = "SIGNAL RE-SYNCHRONIZED";
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
-    renderFleetUI();
 };
 
 window.sendPush = (msg, targetName = selectedCarName) => {
@@ -658,7 +649,7 @@ document.getElementById('historyBtn').onclick = () => {
 };
 window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// AUTO-DISCOVER & REAL-TIME SYNC LISTENER (Listens to parent user cars node)
+// Auto-discovers and syncs all fleet units in real-time
 function initFirebaseSync() {
     const carsRef = ref(db, `users/${safeEmail}/cars`);
     onValue(carsRef, (snapshot) => {
@@ -676,7 +667,6 @@ function initFirebaseSync() {
             subId: allData[carName].subId || ""
         }));
 
-        // If no car is selected yet, select the first available one automatically
         if (!selectedCarName && fleet.length > 0) {
             window.selectCar(fleet[0].name);
         } else if (selectedCarName && !fleet.some(c => c.name === selectedCarName) && fleet.length > 0) {
@@ -685,7 +675,6 @@ function initFirebaseSync() {
 
         renderFleetUI();
 
-        // Update active target view in real-time
         if (selectedCarName && allData[selectedCarName]) {
             const data = allData[selectedCarName];
             if (data.lat && data.lng) {
@@ -791,7 +780,6 @@ document.getElementById('lockRouteBtn').onclick = function() {
     if(routeLocked && selectedCarName && carLatestData[selectedCarName] && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]}); }
 };
 
-// Initialize Firebase real-time sync engine
 initFirebaseSync();
 </script>
 </body>
