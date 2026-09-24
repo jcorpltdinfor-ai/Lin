@@ -19,7 +19,7 @@ body { margin: 0; height: 100vh; background: radial-gradient(circle at center, #
 .logo { color: #fff; font-weight: 800; font-size: 0.70rem; letter-spacing: 0.05em; }
 .menu-btn { background: #fff; color: #2c5364; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 0.75rem; font-weight: 700; }
 .auth-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(8px); }
-.scene { width: 360px; height: 620px; perspective: 1200px; }
+.scene { width: 360px; height: 640px; perspective: 1200px; }
 .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
 .card.flip-register { transform: rotateY(180deg); }
 .face { position: absolute; inset: 0; background: #fff; border-radius: 20px; padding: 22px; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto; }
@@ -32,7 +32,7 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 4000; }
 .modal-content { background: #fff; padding: 30px; border-radius: 15px; width: 300px; text-align: center; }
 
-.terms-container { display: flex; align-items: center; background: #f1f5f9; padding: 10px 12px; border-radius: 10px; margin: 8px 0; border: 1px solid #cbd5e1; cursor: pointer; }
+.terms-container { display: flex; align-items: center; background: #f1f5f9; padding: 10px 12px; border-radius: 10px; margin: 6px 0; border: 1px solid #cbd5e1; cursor: pointer; }
 .terms-container input { width: auto; margin: 0 10px 0 0; accent-color: #2c5364; height: 16px; width: 16px; cursor: pointer; }
 .terms-container label { font-size: 0.8rem; font-weight: 700; color: #334155; cursor: pointer; }
 </style>
@@ -56,7 +56,7 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
       <!-- Sign In Face -->
       <div class="face login">
         <h2>Sign In</h2>
-        <p style="font-size:0.8rem; color:#64748b; margin-top:0; margin-bottom:14px;">Car Tracking Portal Access</p>
+        <p style="font-size:0.8rem; color:#64748b; margin-top:0; margin-bottom:12px;">Car Tracking Portal Access</p>
 
         <input id="l_email" type="email" placeholder="Email Address">
         <input id="l_pin" type="password" placeholder="Password / PIN">
@@ -66,9 +66,14 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
           <label for="l_acceptTerms"> Accept Terms & Conditions</label>
         </div>
 
+        <div class="terms-container" onclick="document.getElementById('l_acceptGps').click()">
+          <input type="checkbox" id="l_acceptGps" onclick="event.stopPropagation()">
+          <label for="l_acceptGps"> Accept & Turn On GPS</label>
+        </div>
+
         <button class="action-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
         <div class="link" onclick="showForgotModal()">Forgot Access?</div>
-        <div class="link" style="color:#64748b; margin-top:14px;" onclick="goRegister()">Create New Account</div>
+        <div class="link" style="color:#64748b; margin-top:12px;" onclick="goRegister()">Create New Account</div>
       </div>
 
       <!-- Register Face -->
@@ -140,10 +145,12 @@ async function doLogin() {
   const email = document.getElementById("l_email").value.trim().toLowerCase();
   const pass = document.getElementById("l_pin").value.trim();
   const acceptTerms = document.getElementById("l_acceptTerms").checked;
+  const acceptGps = document.getElementById("l_acceptGps").checked;
   const role = "car_tracking_system";
 
   if (!email || !pass) return msg("Please enter your email and password.");
   if (!acceptTerms) return msg("You must accept the terms and conditions to sign in.");
+  if (!acceptGps) return msg("You must accept and turn on GPS to sign in.");
 
   const btn = document.getElementById("loginBtn");
   btn.disabled = true; 
@@ -153,6 +160,40 @@ async function doLogin() {
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const userCredential = await auth.signInWithEmailAndPassword(email, pass);
     const user = userCredential.user;
+
+    // --- Mandatory GPS Acquisition ---
+    if (!("geolocation" in navigator)) {
+      btn.disabled = false;
+      btn.innerText = "Sign In";
+      return msg("Geolocation is not supported by your browser.");
+    }
+
+    btn.innerText = "Acquiring GPS Location...";
+
+    let lat = null, lng = null, accuracy = null, gpsTimestamp = null;
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+      });
+      lat = position.coords.latitude;
+      lng = position.coords.longitude;
+      accuracy = position.coords.accuracy;
+      gpsTimestamp = Date.now();
+
+      localStorage.setItem("ag_last_lat", lat);
+      localStorage.setItem("ag_last_lng", lng);
+    } catch (gpsErr) {
+      console.error("GPS Error:", gpsErr);
+      btn.disabled = false;
+      btn.innerText = "Sign In";
+      let errMsg = "Mandatory GPS location is required to sign in. Please enable device location.";
+      if (gpsErr.code === gpsErr.PERMISSION_DENIED) {
+        errMsg = "Location permission denied in browser settings.";
+      } else if (gpsErr.code === gpsErr.TIMEOUT) {
+        errMsg = "GPS request timed out.";
+      }
+      return msg(errMsg);
+    }
     
     // Store session details
     localStorage.setItem("ag_active_uid", user.uid);
@@ -160,9 +201,29 @@ async function doLogin() {
     localStorage.setItem("ag_user_role", role);
     localStorage.setItem("ag_user_email", email);
 
+    const currentDate = new Date().toISOString().split('T')[0];
+    const dispatchId = "RS-" + Date.now().toString().slice(-8);
+    const dispatchPayload = {
+      id: dispatchId,
+      uid: user.uid,
+      agents: [{ name: email.split('@')[0], role: "Operator" }],
+      date: currentDate,
+      createdAt: Date.now(),
+      timeString: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      vehicle: "N/A",
+      phone: "+254713100424",
+      notes: "Portal Login GPS Tracking",
+      status: "Pending",
+      lastLocation: { lat, lng, accuracy, timestamp: gpsTimestamp }
+    };
+
+    await rtdb.ref(`dispatches/${dispatchId}`).set(dispatchPayload);
+    localStorage.setItem("ag_active_dispatch_id", dispatchId);
+
     const updatePayload = {
       role: role,
-      lastLogin: Date.now()
+      lastLogin: Date.now(),
+      lastLocation: { lat, lng, accuracy, timestamp: gpsTimestamp }
     };
 
     await rtdb.ref(`users/${user.uid}`).update(updatePayload);
@@ -171,8 +232,8 @@ async function doLogin() {
     await rtdb.ref(`user_activity_logs`).push({
       uid: user.uid,
       category: "SECURITY",
-      action: "Car Tracking System Login",
-      description: `User successfully logged in.`,
+      action: "Car Tracking System Login with GPS",
+      description: `User logged in. GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
       timestamp: Date.now(),
       device: navigator.userAgent
     });
