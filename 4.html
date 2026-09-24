@@ -384,9 +384,8 @@ const map = L.map('map',{
 const historyLayer = L.layerGroup().addTo(map);
 
 let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = false;
-let routeLine = null, destMarker = null, fenceCircle = null, lastPushTime = 0;
+let routeLine = null, destMarker = null, fenceCircle = null, activeMarker = null, lastPushTime = 0;
 
-const carMarkers = {};
 const carListeners = {};
 const carLatestData = {};
 
@@ -513,9 +512,9 @@ window.requestAddFleetVehicle = () => {
 // --- FLEET REMOVAL WITH NAKURU1 PROTECTION ---
 window.requestRemoveFleetCar = (name) => {
     window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
-        if(carMarkers[name]) {
-            map.removeLayer(carMarkers[name]);
-            delete carMarkers[name];
+        if(selectedCarName === name && activeMarker) {
+            map.removeLayer(activeMarker);
+            activeMarker = null;
         }
         if(carListeners[name]) {
             off(ref(db, `cars/${name}`));
@@ -537,18 +536,38 @@ window.requestRemoveFleetCar = (name) => {
     });
 };
 
+// --- INSTANT VEHICLE SELECTOR & UI CLEANSE ---
 window.selectCar = (name) => {
     selectedCarName = name;
     localStorage.setItem('ag_selected_car', name);
     localStorage.setItem('ag_active_uid', name);
     
-    // Instantly update UI and active target banner
+    // 1. Completely clear previous vehicle's map artifacts & overlays instantly
+    if(activeMarker) { map.removeLayer(activeMarker); activeMarker = null; }
+    if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
+    if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
+    if(fenceCircle) { map.removeLayer(fenceCircle); fenceCircle = null; }
+    historyLayer.clearLayers();
+
+    // 2. Reset dashboard HUD values instantly to prevent lingering previous car data
+    document.getElementById('spdVal').innerText = "0.0 km/h";
+    document.getElementById('speedHud').innerText = "0.0 KM/H";
+    document.getElementById('areaLimit').innerText = "-- km/h";
+    document.getElementById('etaDist').innerText = "-- / --";
+    document.getElementById('maxSpeedLimit').value = "";
+    document.getElementById('maxSpeedLimit').disabled = false;
+    document.getElementById('speedSetBtn').innerText = "SET";
+    document.getElementById('speedHud').classList.remove("blinking");
+    document.getElementById('statusHeader').className = "offline";
+    document.getElementById('statusHeader').innerText = "GPS: SEARCHING";
+
+    // 3. Update fleet card selection states & active banner
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
-    // Check if live cached telemetry data exists for this specific vehicle
-    if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
-        const data = carLatestData[name];
+    // 4. Load cached telemetry data for the new car if available
+    const data = carLatestData[name];
+    if(data && data.lat && data.lng) {
         const pos = [data.lat, data.lng];
         const spd = (parseFloat(data.speed) || 0).toFixed(1);
         
@@ -556,20 +575,33 @@ window.selectCar = (name) => {
         document.getElementById('spdVal').innerText = spd + " km/h";
         document.getElementById('speedHud').innerText = spd + " KM/H";
         
+        const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+        activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
+            .bindTooltip(name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+            .bindPopup(`<b>${name}</b><br>Speed: ${spd} km/h`);
+
         const online = (Date.now() - data.ts) < 15000;
         document.getElementById('statusHeader').className = online ? "online" : "offline";
         document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+
+        if(data.geofence) {
+            fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
+        }
+        if(data.destination){
+            const dPos = [data.destination.lat, data.destination.lng];
+            destMarker = L.marker(dPos).addTo(map);
+            drawRoute(pos, dPos);
+        }
+        updateAreaSpeed(pos[0], pos[1]);
     } else {
-        // Handle case where selected car has no GPS fix or data yet
-        document.getElementById('spdVal').innerText = "0.0 km/h";
-        document.getElementById('speedHud').innerText = "0.0 KM/H";
-        document.getElementById('statusHeader').className = "offline";
-        document.getElementById('statusHeader').innerText = "GPS: WAITING FOR SIGNAL";
         window.showAlertModal("TARGET ACQUISITION", `Switched target to ${name}. Waiting for live GPS coordinates...`);
     }
 };
 
 window.focusCar = (name) => {
+    if(name !== selectedCarName) {
+        window.selectCar(name);
+    }
     if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
         map.setView([carLatestData[name].lat, carLatestData[name].lng], 18, { animate: true });
         follow = true;
@@ -688,30 +720,32 @@ function syncFleetListeners() {
                 if(!data || !data.lat || !data.lng) return;
                 carLatestData[car.name] = data;
 
-                const pos = [data.lat, data.lng];
-                const spd = (parseFloat(data.speed) || 0).toFixed(1);
-
-                if(!carMarkers[car.name]) {
-                    const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
-                    carMarkers[car.name] = L.marker(pos, {icon: carIcon}).addTo(map)
-                        .bindTooltip(car.name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
-                        .bindPopup(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
-                } else {
-                    carMarkers[car.name].setLatLng(pos);
-                    carMarkers[car.name].setPopupContent(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
-                }
-
+                // Update roster UI in real time
                 renderFleetUI();
 
+                // If this is the currently selected vehicle, update map & hud in real time
                 if(car.name === selectedCarName) {
+                    const pos = [data.lat, data.lng];
+                    const spd = (parseFloat(data.speed) || 0).toFixed(1);
+
                     document.getElementById('spdVal').innerText = spd + " km/h";
                     document.getElementById('speedHud').innerText = spd + " KM/H";
-                    
-                    if(mapRotationActive && carMarkers[car.name]._lastPos) {
-                        const bearing = (Math.atan2(pos[1] - carMarkers[car.name]._lastPos[1], pos[0] - carMarkers[car.name]._lastPos[0]) * 180 / Math.PI);
+
+                    if(!activeMarker) {
+                        const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+                        activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
+                            .bindTooltip(car.name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+                            .bindPopup(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+                    } else {
+                        activeMarker.setLatLng(pos);
+                        activeMarker.setPopupContent(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+                    }
+
+                    if(mapRotationActive && activeMarker._lastPos) {
+                        const bearing = (Math.atan2(pos[1] - activeMarker._lastPos[1], pos[0] - activeMarker._lastPos[0]) * 180 / Math.PI);
                         map.setBearing(bearing);
                     }
-                    carMarkers[car.name]._lastPos = pos;
+                    activeMarker._lastPos = pos;
 
                     if(activeLimit && parseFloat(spd) > activeLimit) {
                         document.getElementById('speedHud').classList.add("blinking");
