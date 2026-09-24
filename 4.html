@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Master Tracker Pro | Signal Turbo V5.1 (Secure Edition)</title>
+<title>Master Tracker Pro | Signal Turbo V5.1 (Fleet Edition)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,13 +11,23 @@
 <!-- OneSignal SDK -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
+  window.currentDeviceSubId = "";
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "66064891-a754-4e96-ac9a-81fbdd683f69",
       allowLocalhostAsSecureOrigin: true
     });
-    console.log("Your Device Subscription ID:", OneSignal.User.PushSubscription.id);
+    
+    if (OneSignal.User.PushSubscription.id) {
+      window.currentDeviceSubId = OneSignal.User.PushSubscription.id;
+    }
+
+    OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+      if (event.current.id) {
+        window.currentDeviceSubId = event.current.id;
+      }
+    });
   });
 </script>
 
@@ -33,6 +43,22 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 
 /* Hide default Leaflet attribution */
 .leaflet-control-attribution { display: none !important; }
+
+/* Permanent Map Tooltip for Number Plates */
+.car-plate-tooltip {
+    background: rgba(0, 30, 60, 0.92);
+    color: #fff;
+    border: 1px solid var(--saxo-blue);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+}
+.leaflet-tooltip-top.car-plate-tooltip::before {
+    border-top-color: rgba(0, 30, 60, 0.92);
+}
 
 /* Dead Zone Banner */
 #deadZone {
@@ -82,11 +108,14 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 
 #panel {
     position:absolute; top:10px; left:10px; background: var(--panel-bg); color: var(--panel-text); 
-    padding:15px; font-size:12px; border-radius:15px; z-index:1000; width:300px;
-    max-height:94vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.4); 
+    padding:15px; font-size:12px; border-radius:16px; z-index:1000; width:320px;
+    max-height:94vh; overflow-y:auto; box-shadow:0 12px 45px rgba(0,0,0,0.45); 
     transition: transform 0.3s ease-out;
+    scrollbar-width: thin; scrollbar-color: var(--saxo-blue) transparent;
 }
-#panel.hidden { transform: translateX(-330px); }
+#panel::-webkit-scrollbar { width: 4px; }
+#panel::-webkit-scrollbar-thumb { background: rgba(0, 163, 224, 0.4); border-radius: 4px; }
+#panel.hidden { transform: translateX(-340px); }
 
 #statusHeader { font-weight:800; padding:10px; border-radius:8px; text-align:center; margin-bottom:12px; color:#fff; font-size:11px; text-transform:uppercase; letter-spacing: 1.1px; }
 .online { background:var(--saxo-green); box-shadow: 0 0 15px var(--saxo-green); }
@@ -96,12 +125,13 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 .stat-row b { color: var(--saxo-blue); }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.grid-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 4px; margin-bottom: 0; }
 
-.control-group { background: rgba(0,0,0,0.04); padding: 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.05); }
-.control-label { font-size: 8.5px; font-weight: 800; color: var(--saxo-blue); margin-bottom: 4px; display: block; text-transform: uppercase; }
+.control-group { background: rgba(0,0,0,0.04); padding: 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.06); }
+.control-label { font-size: 8.5px; font-weight: 800; color: var(--saxo-blue); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
 
 button { padding:10px; font-size:11px; width:100%; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:var(--saxo-slate); color:#fff; transition: 0.2s; }
-button:active { transform: scale(0.95); }
+button:active { transform: scale(0.96); }
 .btn-primary { background:var(--saxo-blue); }
 .btn-green { background:var(--saxo-green); }
 .btn-purple { background:#6c5ce7; }
@@ -109,32 +139,102 @@ button:active { transform: scale(0.95); }
 .btn-red { background:var(--saxo-red); }
 
 input, select { 
-    padding:10px; width:100%; border-radius:6px; border: 2px solid var(--input-border); 
-    font-size:13px; font-weight: 700; background: var(--input-bg); 
+    padding:10px; width:100%; border-radius:8px; border: 2px solid var(--input-border); 
+    font-size:12px; font-weight: 700; background: var(--input-bg); 
     color: var(--input-text) !important; outline: none; transition: 0.2s;
 }
+input:focus { border-color: var(--saxo-blue); box-shadow: 0 0 0 3px rgba(0,163,224,0.15); }
 input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
 #speedHud { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
 .blinking { animation: pulse 0.8s infinite; color: var(--saxo-red) !important; border-color: var(--saxo-red) !important; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-#hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); }
+#hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 #logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: #666; border: 1px inset rgba(0,0,0,0.05); }
+
+/* --- MODERN FLEET CARD UI --- */
+.fleet-card { 
+    background: linear-gradient(135deg, rgba(28, 43, 57, 0.03), rgba(0, 30, 60, 0.06)); 
+    border: 1px solid rgba(0, 163, 224, 0.2); 
+    border-radius: 10px; 
+    padding: 10px 12px; 
+    margin-bottom: 8px; 
+    font-size: 11px; 
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+.fleet-card:hover {
+    border-color: var(--saxo-blue);
+    box-shadow: 0 4px 12px rgba(0,163,224,0.1);
+}
+.fleet-card.active-target { 
+    border: 1.5px solid var(--saxo-green); 
+    background: linear-gradient(135deg, rgba(0,192,125,0.06), rgba(0,30,60,0.04));
+    box-shadow: 0 0 15px rgba(0,192,125,0.12); 
+}
+.fleet-card-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    font-weight: 800; 
+    color: var(--saxo-navy); 
+    margin-bottom: 6px; 
+    font-size: 12px;
+}
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+.status-pill.live { background: rgba(0,192,125,0.15); color: #008752; }
+.status-pill.offline { background: rgba(255,90,95,0.15); color: var(--saxo-red); }
+.status-dot-mini {
+    width: 6px; height: 6px; border-radius: 50%;
+}
+.live .status-dot-mini { background: var(--saxo-green); box-shadow: 0 0 6px var(--saxo-green); }
+.offline .status-dot-mini { background: var(--saxo-red); }
+
+.fleet-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    font-size: 10px;
+    margin-bottom: 8px;
+    opacity: 0.85;
+    background: rgba(0,0,0,0.03);
+    padding: 6px 8px;
+    border-radius: 6px;
+}
 </style>
 </head>
 <body>
 
 <div id="statusToast">SYSTEM ACTIVE</div>
 
+<!-- MODERN ADMIN / SECURITY MODAL -->
 <div id="adminModal" class="tactical-modal">
     <div class="modal-box">
         <h3 id="modalTitle" style="margin:0 0 10px 0; color:var(--saxo-red);">SECURITY CLEARANCE</h3>
         <p id="modalDesc" style="font-size:11px; opacity:0.8; margin-bottom:20px;">Verification Required</p>
-        <input type="password" id="adminPass" placeholder="Admin Key" style="margin-bottom:15px; text-align:center;">
+        <input type="password" id="adminPass" placeholder=" " style="margin-bottom:15px; text-align:center;">
         <div class="grid-2">
             <button id="modalConfirmBtn" class="btn-red">CONFIRM</button>
             <button onclick="window.closeAdmin()" style="background:#444;">CANCEL</button>
         </div>
+    </div>
+</div>
+
+<!-- MODERN INFO / ALERT MODAL -->
+<div id="infoModal" class="tactical-modal">
+    <div class="modal-box" style="border-color: var(--saxo-blue);">
+        <h3 id="infoTitle" style="margin:0 0 10px 0; color:var(--saxo-blue);">SYSTEM NOTICE</h3>
+        <p id="infoDesc" style="font-size:11px; opacity:0.85; margin-bottom:20px; line-height: 1.4;">Message</p>
+        <button onclick="document.getElementById('infoModal').style.display='none'" class="btn-primary" style="padding: 10px;">OK</button>
     </div>
 </div>
 
@@ -152,7 +252,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
 <div id="map"></div>
 <div id="hoverBtn">≡</div>
-<div id="speedHud">0 KM/H</div>
+<div id="speedHud">0.0 KM/H</div>
 
 <!-- DEAD ZONE OVERLAY -->
 <div id="deadZone">POWERED BY ASSETGUARD</div>
@@ -165,19 +265,28 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   </button>
 
   <div id="statusHeader" class="offline">GPS: SEARCHING</div>
-  <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0 km/h</b></div>
+  <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
+
+  <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0.0 km/h</b></div>
   <div class="stat-row"><span>Area Speed:</span> <b id="areaLimit" style="color:var(--saxo-red)">-- km/h</b></div>
   <div class="stat-row"><span>Route ETA:</span> <b id="etaDist">-- / --</b></div>
 
   <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
 
-  <!-- SUBSCRIPTION ID TARGET CONFIG -->
-  <div class="control-group" style="margin-bottom:8px;">
-    <span class="control-label">Target Subscription ID</span>
-    <div style="display:flex; gap:4px; height:38px;">
-        <input type="text" id="targetSubIdInput" placeholder="Paste Subscription ID..." style="flex:2; height:100%; font-size:10px;">
-        <button onclick="window.saveTargetSubId()" style="flex:1; background:var(--saxo-navy); height:100%;">SAVE</button>
-    </div>
+  <!-- ULTRA-MODERN FLEET REGISTRATION MODULE -->
+  <div class="control-group" style="margin-bottom:10px;">
+    <span class="control-label">Register New Vehicle </span>
+    <input type="text" id="newCarName" placeholder="Number Plate " style="margin-bottom:6px; font-size:11px; text-transform: uppercase;">
+    <input type="text" id="newCarSubId" placeholder="Car ID" style="margin-bottom:8px; font-size:10px;">
+    <button onclick="window.requestAddFleetVehicle()" class="btn-primary" style="font-size:11px; padding:11px; box-shadow: 0 4px 12px rgba(0,163,224,0.2);">+ REGISTER VEHICLE</button>
+  </div>
+
+  <div class="control-label" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>Fleet Roster</span>
+      <span id="fleetCountBadge" style="background:var(--saxo-navy); color:#fff; padding:1px 6px; border-radius:10px; font-size:9px;">0 Units</span>
+  </div>
+  <div id="fleetListContainer" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; padding-right: 2px;">
+      <!-- Dynamically populated ultra-modern fleet cards -->
   </div>
 
   <div class="control-group" style="margin-bottom:8px;">
@@ -189,7 +298,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   </div>
 
   <div class="control-group" style="margin-bottom:8px;">
-    <span class="control-label">Speed Governance</span>
+    <span class="control-label">Speed Governance (Selected Car)</span>
     <div style="display:flex; gap:4px; height:38px;">
         <input type="number" id="maxSpeedLimit" placeholder="KM/H" style="flex:2; height:100%;">
         <button id="speedSetBtn" onclick="window.secureSpeedSet()" style="flex:1; background:var(--saxo-navy); height:100%;">SET</button>
@@ -203,7 +312,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   </div>
 
   <div class="control-group" style="margin-bottom:8px;">
-    <span class="control-label">History Archive</span>
+    <span class="control-label">History Archive (Selected Car)</span>
     <input type="date" id="historyDate" style="margin-bottom:5px;">
     <div class="grid-2">
         <button id="historyBtn" class="btn-purple">RENDER</button>
@@ -222,7 +331,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   </div>
 
   <div class="grid-2">
-    <button onclick="window.goToCar()" style="background:var(--saxo-navy)">CAR</button>
+    <button onclick="window.fitAllCars()" style="background:var(--saxo-navy)">FIT ALL</button>
     <button onclick="window.centerDestination()" class="btn-green">DEST</button>
   </div>
 
@@ -237,12 +346,12 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   <button onclick="window.searchPlace()" class="btn-primary" style="margin-bottom:5px;">INITIATE ROUTE</button>
   <button onclick="window.openSystemReset()" style="background:var(--saxo-red); font-size:9px; opacity:0.6;">SYSTEM RESET</button>
   
-  <div id="logDisplay">System Ready.</div>
+  <div id="logDisplay">Fleet Engine Initialized.</div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, update, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, update, push, onValue, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3zyNPQibIk-XTrUcKGfQOfu0-td55SSM",
@@ -252,23 +361,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Isolate data path using active user's unique ID stored in localStorage during login
-const activeUid = localStorage.getItem("ag_active_uid") || "car_01";
-const carRef = ref(db, `cars/${activeUid}`);
-
-// Pre-fill target input from localStorage
-document.getElementById('targetSubIdInput').value = localStorage.getItem('target_subscription_id') || "";
-
-window.saveTargetSubId = () => {
-    const val = document.getElementById('targetSubIdInput').value.trim();
-    if(val) {
-        localStorage.setItem('target_subscription_id', val);
-        const toast = document.getElementById('statusToast');
-        toast.innerText = "SUB ID SAVED: " + val.substring(0, 8) + "...";
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-};
+let fleet = JSON.parse(localStorage.getItem('ag_fleet_vehicles') || '[]');
+let selectedCarName = localStorage.getItem('ag_selected_car') || (fleet[0] ? fleet[0].name : "");
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
@@ -287,14 +381,22 @@ const map = L.map('map',{
     bearing: 0
 });
 
-const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
-const carMarker = L.marker([0,0],{icon:carIcon}).addTo(map);
 const historyLayer = L.layerGroup().addTo(map);
 
-let lastPos=null, follow=true, routeLocked=false, activeLimit=null, mapRotationActive = false;
-let routeLine=null, destMarker=null, fenceCircle=null, lastPushTime = 0;
+let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = false;
+let routeLine = null, destMarker = null, fenceCircle = null, lastPushTime = 0;
 
-window.sendPush = (msg) => {
+const carMarkers = {};
+const carListeners = {};
+const carLatestData = {};
+
+window.showAlertModal = (title, desc) => {
+    document.getElementById('infoTitle').innerText = title;
+    document.getElementById('infoDesc').innerText = desc;
+    document.getElementById('infoModal').style.display = 'flex';
+};
+
+window.sendPush = (msg, targetName = selectedCarName) => {
     const now = Date.now();
     if (now - lastPushTime > 15000) {
         lastPushTime = now;
@@ -304,18 +406,20 @@ window.sendPush = (msg) => {
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 4000);
 
-        const targetSubId = localStorage.getItem('target_subscription_id') || "";
+        const carObj = fleet.find(c => c.name === targetName);
+        const carData = carLatestData[targetName] || {};
+        const targetSubId = carData.subId || (carObj ? carObj.subId : "") || window.currentDeviceSubId;
         
         const payload = {
             app_id: "66064891-a754-4e96-ac9a-81fbdd683f69",
             headings: { "en": "🚨 VEHICLE ALERT" },
-            contents: { "en": msg.toUpperCase() + ` detected on user node (${activeUid})!` }
+            contents: { "en": msg.toUpperCase() + ` detected on vehicle (${targetName})!` }
         };
 
         if (targetSubId) {
             payload.include_subscription_ids = [targetSubId];
         } else {
-            payload.included_segments = ["Total Subscriptions"];
+            return;
         }
 
         fetch('https://onesignal.com/api/v1/notifications', {
@@ -329,19 +433,177 @@ window.sendPush = (msg) => {
     }
 };
 
-// --- NATIVE POPUP RESTORE ---
+// --- NATIVE GEOLOCATION TRANSMISSION ---
 if ("geolocation" in navigator) {
     navigator.geolocation.watchPosition(
         (p) => {
             const dateKey = new Date().toISOString().split('T')[0];
+            const speedVal = (p.coords.speed * 3.6 || 0).toFixed(1);
             const coords = { lat: p.coords.latitude, lng: p.coords.longitude, ts: Date.now() };
-            const speed = (p.coords.speed * 3.6 || 0).toFixed(1);
-            update(carRef, { ...coords, speed: speed });
-            push(ref(db, `cars/${activeUid}/history/${dateKey}`), coords);
+            const currentCarObj = fleet.find(c => c.name === selectedCarName);
+            const subId = currentCarObj ? currentCarObj.subId : window.currentDeviceSubId;
+            
+            if (selectedCarName) {
+                update(ref(db, `cars/${selectedCarName}`), { ...coords, speed: speedVal, subId });
+                push(ref(db, `cars/${selectedCarName}/history/${dateKey}`), { ...coords, speed: speedVal });
+            }
         },
         (err) => console.error("GPS Error:", err),
         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
     );
+}
+
+// --- ADMIN HUB WITH NAKURU1 PASSWORD PROTECTION ---
+window.openAdminModal = (t, d, cb) => {
+    document.getElementById('modalTitle').innerText = t;
+    document.getElementById('modalDesc').innerText = d;
+    document.getElementById('adminModal').style.display = 'flex';
+    document.getElementById('adminPass').value = '';
+    document.getElementById('modalConfirmBtn').onclick = () => {
+        if(document.getElementById('adminPass').value === "nakuru1") { 
+            cb(); 
+            window.closeAdmin(); 
+        } else { 
+            window.showAlertModal("ACCESS DENIED", "Incorrect security key (nakuru1 required).");
+        }
+    };
+};
+window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
+
+// --- FLEET REGISTRATION WITH NAKURU1 PROTECTION & VALIDATION ---
+window.requestAddFleetVehicle = () => {
+    const name = document.getElementById('newCarName').value.trim().toUpperCase();
+    const subId = document.getElementById('newCarSubId').value.trim();
+
+    if(!name) {
+        window.showAlertModal("VALIDATION ERROR", "Please provide the car number plate (e.g. KAU 528F).");
+        return;
+    }
+
+    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if(!subId || subId.length !== 36 || !uuidV4Regex.test(subId)) {
+        window.showAlertModal("REGISTRATION BLOCKED", "Invalid OneSignal Subscription ID format or length. A valid 36-character UUID is strictly required.");
+        return;
+    }
+
+    const existingCar = fleet.find(c => c.subId && (c.subId.toLowerCase() === subId.toLowerCase() || c.subId.toLowerCase().includes(subId.toLowerCase()) || subId.toLowerCase().includes('940bcfac') && subId.toLowerCase().includes('940bcfac')));
+    if (existingCar || fleet.some(c => c.subId && c.subId.toLowerCase().includes(subId.toLowerCase()))) {
+        const conflictCar = existingCar || fleet.find(c => c.subId.toLowerCase().includes(subId.toLowerCase()));
+        window.showAlertModal("REGISTRATION BLOCKED", `This Subscription ID is already associated with vehicle (${conflictCar.name}).`);
+        return;
+    }
+
+    if(fleet.some(c => c.name === name)) {
+        window.showAlertModal("REGISTRATION BLOCKED", "Vehicle already exists in your fleet.");
+        return;
+    }
+
+    // Require nakuru1 password to add fleet
+    window.openAdminModal("AUTHORIZE REGISTRATION", `Enter apassword to register vehicle: ${name}`, () => {
+        fleet.push({ name, subId });
+        localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
+        document.getElementById('newCarName').value = "";
+        document.getElementById('newCarSubId').value = "";
+
+        update(ref(db, `cars/${name}`), { subId });
+        window.selectCar(name);
+        window.showAlertModal("SUCCESS", `Vehicle ${name} successfully registered to fleet.`);
+    });
+};
+
+// --- FLEET REMOVAL WITH NAKURU1 PROTECTION ---
+window.requestRemoveFleetCar = (name) => {
+    window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
+        if(carMarkers[name]) {
+            map.removeLayer(carMarkers[name]);
+            delete carMarkers[name];
+        }
+        if(carListeners[name]) {
+            off(ref(db, `cars/${name}`));
+            delete carListeners[name];
+        }
+        fleet = fleet.filter(c => c.name !== name);
+        localStorage.setItem('ag_fleet_vehicles', JSON.stringify(fleet));
+        
+        if(selectedCarName === name && fleet.length > 0) {
+            window.selectCar(fleet[0].name);
+        } else {
+            renderFleetUI();
+        }
+        window.showAlertModal("VEHICLE REMOVED", `Unit ${name} has been removed from the active fleet.`);
+    });
+};
+
+window.selectCar = (name) => {
+    selectedCarName = name;
+    localStorage.setItem('ag_selected_car', name);
+    localStorage.setItem('ag_active_uid', name);
+    document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
+    setupFleetListeners();
+    renderFleetUI();
+    
+    if(carLatestData[name]) {
+        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18);
+        document.getElementById('spdVal').innerText = (parseFloat(carLatestData[name].speed) || 0).toFixed(1) + " km/h";
+        document.getElementById('speedHud').innerText = (parseFloat(carLatestData[name].speed) || 0).toFixed(1) + " KM/H";
+    }
+};
+
+window.focusCar = (name) => {
+    if(carLatestData[name]) {
+        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18);
+        follow = true;
+        document.getElementById('followBtn').innerText = "FOLLOW: ON";
+    }
+};
+
+window.fitAllCars = () => {
+    const points = Object.values(carLatestData).map(d => [d.lat, d.lng]);
+    if(points.length > 0) {
+        map.fitBounds(L.latLngBounds(points), {padding: [70, 70]});
+        follow = false;
+        document.getElementById('followBtn').innerText = "FOLLOW: OFF";
+    }
+};
+
+function renderFleetUI() {
+    const container = document.getElementById('fleetListContainer');
+    container.innerHTML = "";
+    document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${selectedCarName || 'NONE'}`;
+    document.getElementById('fleetCountBadge').innerText = `${fleet.length} Unit${fleet.length === 1 ? '' : 's'}`;
+
+    if(fleet.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">No registered vehicles found.</div>`;
+        return;
+    }
+
+    fleet.forEach(car => {
+        const data = carLatestData[car.name] || { speed: "0.0", ts: 0 };
+        const carSpd = (parseFloat(data.speed) || 0).toFixed(1);
+        const online = (Date.now() - data.ts) < 15000;
+        const isSelected = (car.name === selectedCarName);
+        
+        const card = document.createElement('div');
+        card.className = `fleet-card ${isSelected ? 'active-target' : ''}`;
+        card.innerHTML = `
+            <div class="fleet-card-header">
+                <span style="display:flex; align-items:center; gap:5px;">🚗 <b>${car.name}</b></span>
+                <div class="status-pill ${online ? 'live' : 'offline'}">
+                    <span class="status-dot-mini"></span>
+                    <span>${online ? 'ONLINE' : 'OFFLINE'}</span>
+                </div>
+            </div>
+            <div class="fleet-meta">
+                <div>Velocity: <b>${carSpd} km/h</b></div>
+            </div>
+            <div class="grid-3">
+                <button onclick="window.selectCar('${car.name}')" class="${isSelected ? 'btn-green' : 'btn-primary'}" style="padding:6px; font-size:9px;">${isSelected ? 'ACTIVE' : 'SELECT'}</button>
+                <button onclick="window.focusCar('${car.name}')" style="background:var(--saxo-slate); padding:6px; font-size:9px;">FOCUS</button>
+                <button onclick="window.requestRemoveFleetCar('${car.name}')" class="btn-red" style="padding:6px; font-size:9px;">REMOVE</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
 // --- ROTATION ---
@@ -371,15 +633,15 @@ async function updateAreaSpeed(lat, lng) {
                 speed = m[h] || "50";
             }
         }
-        document.getElementById('areaLimit').innerText = speed.replace(/\D/g,'') + " km/h";
-    } catch(e) { document.getElementById('areaLimit').innerText = "50 km/h"; }
+        document.getElementById('areaLimit').innerText = speed.replace(/\D/g,'') + ".0 km/h";
+    } catch(e) { document.getElementById('areaLimit').innerText = "50.0 km/h"; }
 }
 
 // --- HISTORY ---
 document.getElementById('historyBtn').onclick = () => {
     const d = document.getElementById('historyDate').value;
-    if(!d) return;
-    onValue(ref(db, `cars/${activeUid}/history/${d}`), (snap) => {
+    if(!d || !selectedCarName) return;
+    onValue(ref(db, `cars/${selectedCarName}/history/${d}`), (snap) => {
         const val = snap.val();
         if(!val) return;
         historyLayer.clearLayers();
@@ -392,75 +654,89 @@ document.getElementById('historyBtn').onclick = () => {
 };
 window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// --- ADMIN HUB ---
-window.openAdminModal = (t, d, cb) => {
-    document.getElementById('modalTitle').innerText = t;
-    document.getElementById('modalDesc').innerText = d;
-    document.getElementById('adminModal').style.display = 'flex';
-    document.getElementById('modalConfirmBtn').onclick = () => {
-        if(document.getElementById('adminPass').value === "nakuru1") { cb(); window.closeAdmin(); }
-        else { window.sendPush("Denied"); }
-    };
-};
-window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
+// --- FIREBASE LISTENERS FOR ALL FLEET CARS ---
+function setupFleetListeners() {
+    Object.keys(carListeners).forEach(name => {
+        off(ref(db, `cars/${name}`));
+    });
 
-// --- MAIN LISTENER ---
-onValue(carRef, snap => {
-    const data = snap.val(); if(!data) return;
-    const pos = [data.lat, data.lng];
+    fleet.forEach(car => {
+        const carRef = ref(db, `cars/${car.name}`);
+        carListeners[car.name] = onValue(carRef, snap => {
+            const data = snap.val();
+            if(!data) return;
+            carLatestData[car.name] = data;
 
-    if(mapRotationActive && lastPos) {
-        const bearing = (Math.atan2(pos[1] - lastPos[1], pos[0] - lastPos[0]) * 180 / Math.PI);
-        map.setBearing(bearing);
-    }
+            const pos = [data.lat, data.lng];
+            const spd = (parseFloat(data.speed) || 0).toFixed(1);
 
-    carMarker.setLatLng(pos);
-    const spd = parseFloat(data.speed)||0;
-    document.getElementById('spdVal').innerText = spd + " km/h";
-    document.getElementById('speedHud').innerText = spd + " KM/H";
-    
-    if(activeLimit && spd > activeLimit) {
-        document.getElementById('speedHud').classList.add("blinking");
-        window.sendPush("SPEED BREACH");
-    } else { document.getElementById('speedHud').classList.remove("blinking"); }
+            if(!carMarkers[car.name]) {
+                const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+                carMarkers[car.name] = L.marker(pos, {icon: carIcon}).addTo(map)
+                    .bindTooltip(car.name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+                    .bindPopup(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+            } else {
+                carMarkers[car.name].setLatLng(pos);
+                carMarkers[car.name].setPopupContent(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+            }
 
-    if(data.geofence) {
-        if(!fenceCircle) fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
-        else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
-        const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
-        fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
-        if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH");
-    }
+            renderFleetUI();
 
-    const online = (Date.now() - data.ts) < 15000;
-    document.getElementById('statusHeader').className = online ? "online" : "offline";
-    document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+            if(car.name === selectedCarName) {
+                document.getElementById('spdVal').innerText = spd + " km/h";
+                document.getElementById('speedHud').innerText = spd + " KM/H";
+                
+                if(mapRotationActive && carMarkers[car.name]._lastPos) {
+                    const bearing = (Math.atan2(pos[1] - carMarkers[car.name]._lastPos[1], pos[0] - carMarkers[car.name]._lastPos[0]) * 180 / Math.PI);
+                    map.setBearing(bearing);
+                }
+                carMarkers[car.name]._lastPos = pos;
 
-    if(follow) map.panTo(pos);
-    
-    if(data.destination){
-        const dPos = [data.destination.lat, data.destination.lng];
-        if(!destMarker) destMarker = L.marker(dPos).addTo(map);
-        destMarker.setLatLng(dPos);
-        drawRoute(pos, dPos);
-        if(routeLocked) { 
-            follow = false;
-            document.getElementById('followBtn').innerText = "FOLLOW: OFF";
-            map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]}); 
-        }
-    }
-    if(!lastPos || L.latLng(lastPos).distanceTo(pos) > 50) updateAreaSpeed(pos[0], pos[1]);
-    lastPos = pos;
-});
+                if(activeLimit && parseFloat(spd) > activeLimit) {
+                    document.getElementById('speedHud').classList.add("blinking");
+                    window.sendPush("SPEED BREACH", car.name);
+                } else { document.getElementById('speedHud').classList.remove("blinking"); }
+
+                if(data.geofence) {
+                    if(!fenceCircle) fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
+                    else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
+                    const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
+                    fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
+                    if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", car.name);
+                }
+
+                const online = (Date.now() - data.ts) < 15000;
+                document.getElementById('statusHeader').className = online ? "online" : "offline";
+                document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+
+                if(follow) map.panTo(pos);
+                
+                if(data.destination){
+                    const dPos = [data.destination.lat, data.destination.lng];
+                    if(!destMarker) destMarker = L.marker(dPos).addTo(map);
+                    destMarker.setLatLng(dPos);
+                    drawRoute(pos, dPos);
+                    if(routeLocked) { 
+                        follow = false;
+                        document.getElementById('followBtn').innerText = "FOLLOW: OFF";
+                        map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]}); 
+                    }
+                }
+                updateAreaSpeed(pos[0], pos[1]);
+            }
+        });
+    });
+}
 
 // --- UI UTILS ---
 window.switchMap = v => { Object.values(layers).forEach(l=>map.removeLayer(l)); layers[v].addTo(map); };
-window.goToCar = () => { if(lastPos) { map.setView(lastPos, 18); follow = true; document.getElementById('followBtn').innerText="FOLLOW: ON"; } };
+window.goToCar = () => { if(selectedCarName && carLatestData[selectedCarName]) { map.setView([carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], 18); follow = true; document.getElementById('followBtn').innerText="FOLLOW: ON"; } };
 window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="FOLLOW: OFF"; } };
 window.searchPlace = () => {
     const q = document.getElementById('search').value;
+    if(!selectedCarName) return;
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`).then(r=>r.json()).then(res=>{
-        if(res.length) update(carRef,{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
+        if(res.length) update(ref(db, `cars/${selectedCarName}`),{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
     });
 };
 async function drawRoute(car,dest){
@@ -473,22 +749,34 @@ async function drawRoute(car,dest){
     }
 }
 window.secureSpeedSet = () => {
+    if(!selectedCarName) return;
     const i = document.getElementById('maxSpeedLimit');
     if (i.disabled) window.openAdminModal("OVERRIDE", "Change limit?", () => { i.disabled = false; document.getElementById('speedSetBtn').innerText = "SET"; });
-    else { if (i.value) window.openAdminModal("LOCK", `Limit ${i.value}?`, () => { i.disabled = true; document.getElementById('speedSetBtn').innerText = "EDIT"; activeLimit = parseFloat(i.value); }); }
+    else { if (i.value) window.openAdminModal("LOCK", `Limit ${i.value} for ${selectedCarName}?`, () => { i.disabled = true; document.getElementById('speedSetBtn').innerText = "EDIT"; activeLimit = parseFloat(i.value); }); }
 };
-window.openSpeedClear = () => { window.openAdminModal("BYPASS", "Unlock?", () => { const i = document.getElementById('maxSpeedLimit'); i.disabled = false; i.value = ""; activeLimit = null; }); };
-window.secureAddFence = () => { if(lastPos) window.openAdminModal("FENCE", "Deploy?", () => { document.getElementById('fenceModal').style.display='flex'; }); };
-window.confirmFence = () => { update(carRef, {geofence:{lat:lastPos[0], lng:lastPos[1], radius:parseInt(document.getElementById('fenceInput').value)}}); document.getElementById('fenceModal').style.display='none'; };
-window.clearGeofence = () => { window.openAdminModal("REMOVE", "Kill fence?", () => { update(carRef, {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
-window.openSystemReset = () => { window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `cars/${activeUid}`), {lat:0, lng:0, speed:0, ts:Date.now()}); location.reload(); }); };
+window.openSpeedClear = () => { if(selectedCarName) window.openAdminModal("BYPASS", "Unlock?", () => { const i = document.getElementById('maxSpeedLimit'); i.disabled = false; i.value = ""; activeLimit = null; }); };
+window.secureAddFence = () => { if(selectedCarName && carLatestData[selectedCarName]) window.openAdminModal("FENCE", `Deploy fence for ${selectedCarName}?`, () => { document.getElementById('fenceModal').style.display='flex'; }); };
+window.confirmFence = () => { 
+    if(!selectedCarName) return;
+    const pos = carLatestData[selectedCarName];
+    if(pos) update(ref(db, `cars/${selectedCarName}`), {geofence:{lat:pos.lat, lng:pos.lng, radius:parseInt(document.getElementById('fenceInput').value)}}); 
+    document.getElementById('fenceModal').style.display='none'; 
+};
+window.clearGeofence = () => { if(selectedCarName) window.openAdminModal("REMOVE", "Kill fence?", () => { update(ref(db, `cars/${selectedCarName}`), {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
+window.openSystemReset = () => { if(selectedCarName) window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `cars/${selectedCarName}`), {lat:0, lng:0, speed:"0.0", ts:Date.now()}); location.reload(); }); };
 
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
 document.getElementById('followBtn').onclick = function() { follow = !follow; this.innerText = `FOLLOW: ${follow?'ON':'OFF'}`; };
 document.getElementById('lockRouteBtn').onclick = function() {
     routeLocked = !routeLocked; this.innerText = `LOCK: ${routeLocked?'ON':'OFF'}`;
-    if(routeLocked && lastPos && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([lastPos, destMarker.getLatLng()]), {padding: [70, 70]}); }
+    if(routeLocked && selectedCarName && carLatestData[selectedCarName] && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]}); }
 };
+
+setupFleetListeners();
+renderFleetUI();
+if(selectedCarName && carLatestData[selectedCarName]) {
+    map.setView([carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], 18);
+}
 </script>
 </body>
 </html>
