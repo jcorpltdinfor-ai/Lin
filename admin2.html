@@ -101,7 +101,12 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 #panel::-webkit-scrollbar-thumb { background: rgba(0, 163, 224, 0.4); border-radius: 4px; }
 #panel.hidden { transform: translateX(-340px); }
 
-#statusHeader { font-weight:800; padding:10px; border-radius:8px; text-align:center; margin-bottom:12px; color:#fff; font-size:11px; text-transform:uppercase; letter-spacing: 1.1px; }
+#statusHeader { 
+    font-weight: 800; padding: 10px; border-radius: 8px; text-align: center; 
+    margin-bottom: 12px; color: #fff; font-size: 11px; text-transform: uppercase; 
+    letter-spacing: 1.1px; cursor: pointer; transition: 0.2s; user-select: none;
+}
+#statusHeader:hover { filter: brightness(1.1); transform: scale(1.01); }
 .online { background:var(--saxo-green); box-shadow: 0 0 15px var(--saxo-green); }
 .offline { background:var(--saxo-red); }
 
@@ -236,7 +241,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
       </button>
   </div>
 
-  <div id="statusHeader" class="offline">FLEET: STANDBY</div>
+  <div id="statusHeader" class="offline" onclick="window.forceRefreshSignal()" title="Click to instantly re-sync/refresh fleet signal">signal lost: click here to refresh</div>
   <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
 
   <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0.0 km/h</b></div>
@@ -330,13 +335,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const currentUserEmail = (
-  localStorage.getItem('ag_user_email') || 
-  localStorage.getItem('userEmail') || 
-  localStorage.getItem('currentUserEmail') || 
-  'default_user'
-).trim().toLowerCase();
+// Robust check across all common LocalStorage keys for logged-in user email
+const getStoredEmail = () => {
+    const keys = ['ag_user_email', 'userEmail', 'currentUserEmail', 'email', 'logged_user', 'user', 'admin_email', 'username', 'account_email'];
+    for (let k of keys) {
+        const val = localStorage.getItem(k);
+        if (val && val.trim().length > 0) return val.trim().toLowerCase();
+    }
+    return 'default_user';
+};
 
+const currentUserEmail = getStoredEmail();
 const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
 document.getElementById('sessionUserBadge').innerText = currentUserEmail;
 
@@ -376,6 +385,44 @@ window.showAlertModal = (title, desc) => {
     document.getElementById('infoTitle').innerText = title;
     document.getElementById('infoDesc').innerText = desc;
     document.getElementById('infoModal').style.display = 'flex';
+};
+
+// Instant Signal / Force Refresh button action (without full page reload)
+window.forceRefreshSignal = () => {
+    const toast = document.getElementById('statusToast');
+    toast.innerText = "REFRESHING SIGNAL...";
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+
+    fleet.forEach(car => {
+        const carRef = ref(db, `users/${safeEmail}/cars/${car.name}`);
+        onValue(carRef, snap => {
+            const data = snap.val();
+            if(data) {
+                carLatestData[car.name] = data;
+                renderFleetUI();
+                if(car.name === selectedCarName && data.lat && data.lng) {
+                    const pos = [data.lat, data.lng];
+                    const spd = (parseFloat(data.speed) || 0).toFixed(1);
+                    document.getElementById('spdVal').innerText = spd + " km/h";
+                    document.getElementById('speedHud').innerText = spd + " KM/H";
+                    if(activeMarker) {
+                        activeMarker.setLatLng(pos);
+                        activeMarker.setPopupContent(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+                    } else {
+                        const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+                        activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
+                            .bindTooltip(car.name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+                            .bindPopup(`<b>${car.name}</b><br>Speed: ${spd} km/h`);
+                    }
+                    const online = (Date.now() - data.ts) < 15000;
+                    document.getElementById('statusHeader').className = online ? "online" : "offline";
+                    document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+                    if(follow) map.panTo(pos);
+                }
+            }
+        }, { onlyOnce: true });
+    });
 };
 
 window.sendPush = (msg, targetName = selectedCarName) => {
