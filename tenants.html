@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AssetGuard Pro | Houses & Tenants</title>
+  <style>
+    *{ box-sizing:border-box; margin:0; padding:0; } 
+    :root{ 
+      --primary:#0284c7; 
+      --primary-dark:#075985; 
+      --primary-light:#e0f2fe; 
+      --success:#16a34a; 
+      --success-light:#dcfce7; 
+      --danger:#dc2626; 
+      --danger-light:#fee2e2; 
+      --warning:#d97706; 
+      --warning-light:#fef3c7; 
+      --purple:#7c3aed; 
+      --purple-light:#ede9fe; 
+      --dark:#0f172a; 
+      --muted:#64748b; 
+      --border:#e2e8f0; 
+      --bg:#f5f7fa; 
+      --white:#fff; 
+    } 
+    html, body{ width:100%; min-height:100%; } 
+    body{ 
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; 
+      background:var(--bg); 
+      color:var(--dark); 
+      font-size:13px; 
+      overflow-x:hidden; 
+    } 
+    button, input, select, textarea{ font:inherit; } 
+    button{ cursor:pointer; } 
+    .app{ width:100%; max-width:1450px; margin:auto; padding:12px; } 
+
+    /* ========================================================= HEADER ========================================================= */ 
+    .page-header{ 
+      background:var(--white); 
+      border:1px solid var(--border); 
+      border-radius:14px; 
+      padding:10px 12px; 
+      display:flex; 
+      align-items:center; 
+      justify-space-between; 
+      gap:10px; 
+      margin-bottom:10px; 
+      box-shadow:0 3px 14px rgba(15,23,42,.04); 
+    } 
+    .page-title{ display:flex; align-items:center; gap:9px; min-width:0; flex:1; } 
+    .page-icon{ 
+      width:36px; 
+      height:36px; 
+      border-radius:9px; 
+      display:grid; 
+      place-items:center; 
+      background:var(--primary-light); 
+      color:var(--primary-dark); 
+      font-size:18px; 
+      flex:none; 
+    } 
+    .page-title h1{ font-size:16px; line-height:1.1; font-weight:800; } 
+    .page-title p{ color:var(--muted); font-size:9px; margin-top:3px; } 
+    .header-actions{ display:flex; align-items:center; justify-content:flex-end; gap:5px; flex-wrap:nowrap; flex:none; } 
+    .btn{ 
+      border:0; 
+      border-radius:8px; 
+      min-height:33px; 
+      padding:6px 10px; 
+      display:inline-flex; 
+      align-items:center; 
+      justify-content:center; 
+      gap:5px; 
+      font-size:10px; 
+      font-weight:750; 
+      transition:.18s ease; 
+      white-space:nowrap; 
+    } 
+    .btn:hover{ transform:translateY(-1px); } 
+    .btn-primary{ background:var(--primary); color:white; } 
+    .btn-primary:hover{ background:var(--primary-dark); } 
+    .btn-secondary{ background:#f1f5f9; color:#334155; border:1px solid var(--border); } 
+    .btn-success{ background:var(--success); color:white; } 
+    .btn-danger{ background:var(--danger); color:white; } 
+    .btn:disabled{ opacity:.48; cursor:not-allowed; transform:none; } 
+
+    /* ========================================================= STATS ========================================================= */ 
+    .stats{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-bottom:10px; } 
+    .stat{ background:var(--white); border:1px solid var(--border); border-radius:11px; padding:10px 11px; min-width:0; } 
+    .stat-top{ display:flex; align-items:center; justify-content:space-between; gap:5px; } 
+    .stat-label{ color:var(--muted); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; } 
+    .stat-icon{ width:27px; height:27px; border-radius:8px; display:grid; place-items:center; font-size:13px; } 
+    .stat-value{ margin-top:5px; font-size:18px; line-height:1; font-weight:850; } 
+    .stat-note{ margin-top:4px; color:var(--muted); font-size:9px; } 
+
+    /* ========================================================= TOOLBAR ========================================================= */ 
+    .toolbar{ 
+      background:var(--white); 
+      border:1px solid var(--border); 
+      border-radius:12px; 
+      padding:9px; 
+      display:flex; 
+      gap:7px; 
+      align-items:center; 
+      margin-bottom:10px; 
+    } 
+    .search{ flex:1; min-width:180px; position:relative; } 
+    .search input{ 
+      width:100%; 
+      height:34px; 
+      border:1px solid var(--border); 
+      border-radius:8px; 
+      padding:0 10px 0 31px; 
+      outline:none; 
+      background:#f8fafc; 
+      color:var(--dark); 
+    } 
+    .search input:focus, .form-control:focus{ 
+      border-color:var(--primary); 
+      box-shadow:0 0 0 3px rgba(2,132,199,.1); 
+      background:white; 
+    } 
+    .search-icon{ position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); } 
+    .filter{ 
+      height:34px; 
+      border:1px solid var(--border); 
+      border-radius:8px; 
+      background:#f8fafc; 
+      padding:0 8px; 
+      outline:none; 
+      min-width:115px; 
+      color:#334155; 
+      font-size:10px; 
+    } 
+    .toolbar-info{ color:var(--muted); font-size:10px; white-space:nowrap; } 
+
+    /* ========================================================= TABLE ========================================================= */ 
+    .table-card{ 
+      background:var(--white); 
+      border:1px solid var(--border); 
+      border-radius:12px; 
+      overflow:hidden; 
+      box-shadow:0 3px 15px rgba(15,23,42,.035); 
+    } 
+    .table-head{ 
+      padding:10px 12px; 
+      border-bottom:1px solid var(--border); 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center; 
+      gap:10px; 
+    } 
+    .table-title{ font-size:12px; font-weight:800; } 
+    .table-subtitle{ color:var(--muted); font-size:9px; margin-top:2px; } 
+    .table-wrap{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; } 
+    table{ width:100%; min-width:1100px; border-collapse:collapse; } 
+    thead th{ 
+      background:#f8fafc; 
+      color:#475569; 
+      font-size:9px; 
+      text-transform:uppercase; 
+      letter-spacing:.35px; 
+      font-weight:800; 
+      padding:8px 7px; 
+      border-bottom:1px solid var(--border); 
+      text-align:left; 
+      white-space:nowrap; 
+    } 
+    tbody td{ padding:8px 7px; border-bottom:1px solid #edf2f7; font-size:10px; vertical-align:middle; white-space:nowrap; } 
+    tbody tr:last-child td{ border-bottom:0; } 
+    tbody tr:hover{ background:#f8fbff; } 
+    .house-main{ font-weight:800; color:#0f172a; } 
+    .house-sub{ color:var(--muted); font-size:8px; margin-top:2px; } 
+    .money{ font-weight:750; } 
+    .badge{ 
+      display:inline-flex; 
+      align-items:center; 
+      gap:4px; 
+      padding:4px 7px; 
+      border-radius:999px; 
+      font-size:8px; 
+      font-weight:800; 
+      white-space:nowrap; 
+    } 
+    .badge-occupied, .badge-active, .badge-held{ background:var(--success-light); color:#166534; } 
+    .badge-vacant{ background:#f1f5f9; color:#475569; } 
+    .badge-maintenance, .badge-refunded{ background:var(--warning-light); color:#92400e; } 
+    .badge-inactive{ background:var(--danger-light); color:#991b1b; } 
+    .badge-applied{ background:var(--purple-light); color:#5b21b6; } 
+    .badge-partial{ background:#ffedd5; color:#9a3412; } 
+    .protected-btn{ 
+      min-height:30px; 
+      padding:6px 10px; 
+      background:#f8fafc; 
+      border:1px solid #cbd5e1; 
+      color:#334155; 
+      border-radius:8px; 
+      font-size:9px; 
+      font-weight:800; 
+      display:inline-flex; 
+      align-items:center; 
+      justify-content:center; 
+      gap:5px; 
+    } 
+    .protected-btn:hover{ background:#e0f2fe; border-color:#7dd3fc; color:#075985; } 
+
+    /* ========================================================= EMPTY ========================================================= */ 
+    .empty{ padding:42px 20px; text-align:center; } 
+    .empty-icon{ 
+      width:50px; 
+      height:50px; 
+      border-radius:14px; 
+      background:#f1f5f9; 
+      display:grid; 
+      place-items:center; 
+      margin:0 auto 9px; 
+      font-size:21px; 
+    } 
+    .empty h3{ font-size:13px; margin-bottom:4px; } 
+    .empty p{ max-width:450px; margin:auto; color:var(--muted); font-size:10px; line-height:1.5; } 
+
+    /* ========================================================= MODALS ========================================================= */ 
+    .modal-overlay{ 
+      position:fixed; 
+      inset:0; 
+      z-index:1000; 
+      background:rgba(15,23,42,.52); 
+      backdrop-filter:blur(5px); 
+      display:none; 
+      align-items:center; 
+      justify-content:center; 
+      padding:12px; 
+    } 
+    .modal-overlay.open{ display:flex; } 
+    .modal{ 
+      width:min(720px,100%); 
+      max-height:94vh; 
+      overflow:auto; 
+      background:white; 
+      border-radius:15px; 
+      box-shadow:0 25px 80px rgba(15,23,42,.25); 
+      animation:modalIn .18s ease; 
+    } 
+    .small-modal{ width:min(430px,100%); } 
+    @keyframes modalIn{ 
+      from{ opacity:0; transform:translateY(8px) scale(.985); } 
+      to{ opacity:1; transform:none; } 
+    } 
+    .modal-header{ 
+      padding:12px 14px; 
+      border-bottom:1px solid var(--border); 
+      display:flex; 
+      justify-content:space-between; 
+      align-items:center; 
+      gap:10px; 
+      position:sticky; 
+      top:0; 
+      background:white; 
+      z-index:2; 
+    } 
+    .modal-title{ font-size:14px; font-weight:850; } 
+    .modal-subtitle{ color:var(--muted); font-size:9px; margin-top:2px; } 
+    .close-btn{ 
+      width:30px; 
+      height:30px; 
+      border:0; 
+      border-radius:8px; 
+      background:#f1f5f9; 
+      color:#475569; 
+      font-size:19px; 
+      line-height:1; 
+    } 
+    .modal-body{ padding:13px 14px; } 
+    .modal-footer{ 
+      padding:10px 14px; 
+      border-top:1px solid var(--border); 
+      display:flex; 
+      justify-content:flex-end; 
+      gap:7px; 
+      position:sticky; 
+      bottom:0; 
+      background:white; 
+      z-index:2; 
+    } 
+
+    /* ========================================================= FORMS ========================================================= */ 
+    .form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; } 
+    .form-group{ min-width:0; } 
+    .form-group.full{ grid-column:1/-1; } 
+    .form-label{ display:block; font-size:9px; font-weight:800; color:#334155; margin-bottom:4px; } 
+    .required{ color:var(--danger); } 
+    .form-control{ 
+      width:100%; 
+      height:34px; 
+      border:1px solid var(--border); 
+      border-radius:8px; 
+      outline:none; 
+      padding:0 9px; 
+      background:#f8fafc; 
+      color:var(--dark); 
+      font-size:10px; 
+    } 
+    textarea.form-control{ height:66px; resize:vertical; padding-top:8px; } 
+    select.form-control{ cursor:pointer; } 
+    .section-label{ 
+      grid-column:1/-1; 
+      margin-top:5px; 
+      padding-bottom:5px; 
+      border-bottom:1px solid var(--border); 
+      font-size:10px; 
+      font-weight:850; 
+      color:var(--primary-dark); 
+    } 
+    .help{ color:var(--muted); font-size:8px; margin-top:3px; line-height:1.35; } 
+
+    /* ========================================================= SECURITY ========================================================= */ 
+    .security-panel{ 
+      border:1px solid #bae6fd; 
+      background:#f0f9ff; 
+      border-radius:11px; 
+      padding:12px; 
+      text-align:center; 
+      margin-bottom:12px; 
+    } 
+    .security-icon{ font-size:25px; margin-bottom:4px; } 
+    .security-title{ font-size:13px; font-weight:850; color:#075985; } 
+    .security-text{ margin-top:3px; color:#64748b; font-size:9px; } 
+    .pin-wrap{ max-width:230px; margin:0 auto; } 
+    .pin-input{ 
+      width:100%; 
+      height:43px; 
+      text-align:center; 
+      letter-spacing:8px; 
+      font-size:20px; 
+      font-weight:800; 
+      border:1px solid var(--border); 
+      border-radius:9px; 
+      outline:none; 
+    } 
+    .pin-input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(2,132,199,.1); } 
+    .pin-error{ display:none; color:var(--danger); text-align:center; font-size:9px; font-weight:700; margin-top:7px; } 
+    .pin-error.show{ display:block; } 
+
+    /* ========================================================= TOAST ========================================================= */ 
+    .toast{ 
+      position:fixed; 
+      right:14px; 
+      bottom:14px; 
+      z-index:3000; 
+      background:#0f172a; 
+      color:white; 
+      padding:10px 13px; 
+      border-radius:9px; 
+      box-shadow:0 12px 30px rgba(0,0,0,.2); 
+      font-size:10px; 
+      font-weight:700; 
+      opacity:0; 
+      transform:translateY(10px); 
+      pointer-events:none; 
+      transition:.2s; 
+      max-width:330px; 
+    } 
+    .toast.show{ opacity:1; transform:none; } 
+
+    /* ========================================================= RESPONSIVE ========================================================= */ 
+    @media(max-width:900px){ 
+      .stats{ grid-template-columns:repeat(3,minmax(0,1fr)); } 
+    } 
+    @media(max-width:650px){ 
+      .app{ padding:7px; } 
+      .page-header{ padding:9px; align-items:center; } 
+      .page-title h1{ font-size:13px; } 
+      .page-title p{ font-size:8px; } 
+      .page-icon{ width:32px; height:32px; } 
+      .header-actions{ gap:3px; } 
+      .header-actions .btn{ min-height:29px; padding:5px 7px; font-size:8px; } 
+      .stats{ grid-template-columns:repeat(2,minmax(0,1fr)); } 
+      .stats .stat:last-child{ grid-column:1/-1; } 
+      .toolbar{ flex-wrap:wrap; } 
+      .search{ flex-basis:100%; } 
+      .filter{ flex:1; min-width:0; } 
+      .toolbar-info{ display:none; } 
+      .form-grid{ grid-template-columns:1fr; } 
+      .form-group.full, .section-label{ grid-column:auto; } 
+      .modal-overlay{ align-items:flex-end; padding:0; } 
+      .modal{ width:100%; max-height:94vh; border-radius:15px 15px 0 0; } 
+      .small-modal{ width:100%; } 
+    } 
+    @media(max-width:450px){ 
+      .page-header{ align-items:center; flex-wrap:wrap; } 
+      .page-title p{ display:none; } 
+      .header-actions{ flex-wrap:wrap; gap:4px; } 
+      .header-actions .btn{ min-height:30px; padding:5px 8px; font-size:10px; } 
+      .header-actions .btn .btn-text{ display:inline; } 
+    } 
+    @media(max-width:360px){ 
+      .page-title h1{ font-size:12px; } 
+      .page-icon{ width:29px; height:29px; font-size:15px; } 
+      .header-actions .btn{ height:28px; min-height:28px; } 
+    } 
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- ===================================================== HEADER ====================================================== --> 
+    <header class="page-header"> 
+      <div class="page-title"> 
+        <div class="page-icon"> 🏠 </div> 
+        <div> 
+          <h1>Houses & Tenants</h1> 
+          <p>Property directory, tenancy and deposits</p> 
+        </div> 
+      </div> 
+      <div class="header-actions"> 
+        <button class="btn btn-primary" id="topAddTenantBtn" onclick="handleAddTenant()" title="Add tenant"> 
+          👤 <span class="btn-text">Add Tenant</span> 
+        </button> 
+        <button class="btn btn-success" onclick="openHouseModal()" title="Add house"> 
+          🏠 <span class="btn-text">Add House</span> 
+        </button> 
+        <button class="btn btn-secondary" onclick="goToSettings()" title="Security settings"> 
+          🔐 <span class="btn-text">Settings</span> 
+        </button> 
+      </div> 
+    </header> 
+
+    <!-- ===================================================== STATISTICS ====================================================== --> 
+    <section class="stats"> 
+      <div class="stat"> 
+        <div class="stat-top"> 
+          <div class="stat-label"> Total Houses </div> 
+          <div class="stat-icon" style="background:#e0f2fe"> 🏠 </div> 
+        </div> 
+        <div class="stat-value" id="statHouses"> 0 </div> 
+        <div class="stat-note"> Registered properties </div> 
+      </div> 
+      <div class="stat"> 
+        <div class="stat-top"> 
+          <div class="stat-label"> Occupied </div> 
+          <div class="stat-icon" style="background:#dcfce7"> 👤 </div> 
+        </div> 
+        <div class="stat-value" id="statOccupied"> 0 </div> 
+        <div class="stat-note"> Currently occupied </div> 
+      </div> 
+      <div class="stat"> 
+        <div class="stat-top"> 
+          <div class="stat-label"> Available </div> 
+          <div class="stat-icon" style="background:#dcfce7"> 🔑 </div> 
+        </div> 
+        <div class="stat-value" id="statVacant"> 0 </div> 
+        <div class="stat-note"> Houses available for tenants </div> 
+      </div> 
+      <div class="stat"> 
+        <div class="stat-top"> 
+          <div class="stat-label"> Active Tenants </div> 
+          <div class="stat-icon" style="background:#ede9fe"> 👥 </div> 
+        </div> 
+        <div class="stat-value" id="statTenants"> 0 </div> 
+        <div class="stat-note"> Active registrations </div> 
+      </div> 
+      <div class="stat"> 
+        <div class="stat-top"> 
+          <div class="stat-label"> Deposits Held </div> 
+          <div class="stat-icon" style="background:#fef3c7"> 💰 </div> 
+        </div> 
+        <div class="stat-value" id="statDeposits"> KES 0 </div> 
+        <div class="stat-note"> Refundable deposits </div> 
+      </div> 
+    </section> 
+
+    <!-- ===================================================== SEARCH / FILTER ====================================================== --> 
+    <section class="toolbar"> 
+      <div class="search"> 
+        <span class="search-icon"> 🔎 </span> 
+        <input id="searchInput" type="search" placeholder="Search house, tenant, phone, ID or KRA PIN..." oninput="renderDirectory()"> 
+      </div> 
+      <select id="statusFilter" class="filter" onchange="renderDirectory()"> 
+        <option value="all"> All Status </option> 
+        <option value="occupied"> Occupied </option> 
+        <option value="vacant"> Available </option> 
+        <option value="maintenance"> Maintenance </option> 
+      </select> 
+      <select id="typeFilter" class="filter" onchange="renderDirectory()"> 
+        <option value="all"> All Types </option> 
+      </select> 
+      <div class="toolbar-info" id="resultCount"> 0 records </div> 
+    </section> 
+
+    <!-- ===================================================== DIRECTORY ====================================================== --> 
+    <section class="table-card"> 
+      <div class="table-head"> 
+        <div> 
+          <div class="table-title"> Property Directory </div> 
+          <div class="table-subtitle"> Create houses first. Tenants can only be assigned to available houses. </div> 
+        </div> 
+      </div> 
+      <div class="table-wrap"> 
+        <table> 
+          <thead> 
+            <tr> 
+              <th>House</th> 
+              <th>Type</th> <th>Floor / Location</th> 
+              <th>Rent</th> 
+              <th>Status</th> 
+              <th>Tenant</th> 
+              <th>Phone</th> <th>People</th> 
+              <th>Deposit</th> 
+              <th>Deposit Status</th> 
+              <th>Move In</th> 
+              <th>Action</th> 
+            </tr> 
+          </thead> 
+          <tbody id="directoryBody"></tbody> 
+        </table> 
+      </div> 
+    </section> 
+  </div>
+
+  <!-- ===================================================== HOUSE MODAL ====================================================== -->
+  <div class="modal-overlay" id="houseModal">
+    <div class="modal" onclick="event.stopPropagation()"> 
+      <div class="modal-header"> 
+        <div> 
+          <div class="modal-title" id="houseModalTitle"> Add House </div> 
+          <div class="modal-subtitle"> Create the property before assigning tenants. </div> 
+        </div> 
+        <button class="close-btn" onclick="closeHouseModal()"> × </button> 
+      </div> 
+      <div class="modal-body"> 
+        <form id="houseForm" onsubmit="event.preventDefault(); requestSaveHouse();"> 
+          <input type="hidden" id="houseId"> 
+          <div class="form-grid"> 
+            <div class="form-group"> 
+              <label class="form-label"> House Number <span class="required">*</span> </label> 
+              <input class="form-control" id="houseNumber" required placeholder="e.g. House A"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> House Type <span class="required">*</span> </label> 
+              <select class="form-control" id="houseType" required> 
+                <option value=""> Select type </option> 
+                <option>Single Room</option> 
+                <option>Double Room</option> 
+                <option>Bedsitter</option> 
+                <option>1 Bedroom</option> 
+                <option>2 Bedroom</option> 
+                <option>3 Bedroom</option> 
+                <option>4 Bedroom</option> 
+                <option>Other</option> 
+              </select> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Floor / Location </label> 
+              <input class="form-control" id="floorLocation" placeholder="e.g. Ground Floor"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Monthly Rent (KES) <span class="required">*</span> </label> 
+              <input class="form-control" id="monthlyRent" type="number" min="0" step="0.01" required placeholder="10000"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Standard Security Deposit (KES) </label> 
+              <input class="form-control" id="standardDeposit" type="number" min="0" step="0.01" value="0" placeholder="10000"> 
+              <div class="help"> Default one-time refundable deposit for a new tenant. </div> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> House Status </label> 
+              <select class="form-control" id="houseStatus"> 
+                <option value="Vacant"> Vacant / Available </option> 
+                <option value="Occupied"> Occupied </option> 
+                <option value="Maintenance"> Maintenance </option> 
+              </select> 
+            </div> 
+            <div class="form-group full"> 
+              <label class="form-label"> Notes </label> 
+              <textarea class="form-control" id="houseNotes" placeholder="Optional property notes..."></textarea> 
+            </div> 
+          </div> 
+        </form> 
+      </div> 
+      <div class="modal-footer"> 
+        <button class="btn btn-secondary" onclick="closeHouseModal()"> Cancel </button> 
+        <button class="btn btn-primary" onclick="requestSaveHouse()"> Save House </button> 
+      </div> 
+    </div> 
+  </div>
+
+  <!-- ===================================================== TENANT MODAL ====================================================== -->
+  <div class="modal-overlay" id="tenantModal">
+    <div class="modal" onclick="event.stopPropagation()"> 
+      <div class="modal-header"> 
+        <div> 
+          <div class="modal-title" id="tenantModalTitle"> Add Tenant </div> 
+          <div class="modal-subtitle"> Tenant details and refundable security deposit. </div> 
+        </div> 
+        <button class="close-btn" onclick="closeTenantModal()"> × </button> 
+      </div> 
+      <div class="modal-body"> 
+        <form id="tenantForm" onsubmit="event.preventDefault(); requestSaveTenant();"> 
+          <input type="hidden" id="tenantHouseId"> 
+          <input type="hidden" id="tenantId"> 
+          <div class="form-grid"> 
+            <div class="section-label"> Property Assignment </div> 
+            <div class="form-group full"> 
+              <label class="form-label"> Available House <span class="required">*</span> </label> 
+              <select class="form-control" id="tenantHouseSelect" required onchange="syncTenantHouse()"> 
+                <option value=""> Select available house </option> 
+              </select> 
+              <div class="help" id="availableHouseHelp"> Only vacant houses without an active tenant can be selected. </div> 
+            </div> 
+            <div class="section-label"> Tenant Details </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Full Name <span class="required">*</span> </label> 
+              <input class="form-control" id="tenantName" required placeholder="Full tenant name"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Phone Number <span class="required">*</span> </label> 
+              <input class="form-control" id="tenantPhone" required placeholder="07XXXXXXXX"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Email </label> 
+              <input class="form-control" id="tenantEmail" type="email" placeholder="tenant@example.com"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> ID Number </label> 
+              <input class="form-control" id="tenantIdNumber" placeholder="National ID"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> KRA PIN </label> 
+              <input class="form-control" id="tenantKraPin" placeholder="A000000000X"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> People Staying </label> 
+              <input class="form-control" id="peopleStaying" type="number" min="1" step="1" value="1"> 
+            </div> 
+            <div class="section-label"> Next of Kin </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Next of Kin Name </label> 
+              <input class="form-control" id="nextOfKinName" placeholder="Full name"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Next of Kin Phone </label> 
+              <input class="form-control" id="nextOfKinPhone" placeholder="07XXXXXXXX"> 
+            </div> 
+            <div class="section-label"> Tenancy </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Move-In Date <span class="required">*</span> </label> 
+              <input class="form-control" id="moveInDate" type="date" required> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Lease End Date </label> 
+              <input class="form-control" id="leaseEndDate" type="date"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Tenant Status </label> 
+              <select class="form-control" id="tenantStatus"> 
+                <option value="Active"> Active </option> 
+                <option value="Inactive"> Inactive </option> 
+              </select> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Monthly Rent </label> 
+              <input class="form-control" id="tenantRent" type="number" min="0" step="0.01" readonly> 
+            </div> 
+            <div class="section-label"> Refundable Security Deposit — One-Time </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Deposit Received (KES) </label> 
+              <input class="form-control" id="depositAmount" type="number" min="0" step="0.01" value="0"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Deposit Status </label> 
+              <select class="form-control" id="depositStatus"> 
+                <option value="Held"> Held </option> 
+                <option value="Partially Refunded"> Partially Refunded </option> 
+                <option value="Fully Refunded"> Fully Refunded </option> 
+                <option value="Applied to Charges"> Applied to Charges </option> 
+              </select> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Amount Refunded / Applied (KES) </label> 
+              <input class="form-control" id="depositRefundedAmount" type="number" min="0" step="0.01" value="0"> 
+            </div> 
+            <div class="form-group"> 
+              <label class="form-label"> Refund Date </label> 
+              <input class="form-control" id="depositRefundDate" type="date"> 
+            </div> 
+            <div class="form-group full"> 
+              <label class="form-label"> Deposit Notes </label> 
+              <textarea class="form-control" id="depositNotes" placeholder="Refund, deduction or deposit notes..."></textarea> 
+            </div> 
+            <div class="section-label"> General Notes </div> 
+            <div class="form-group full"> 
+              <textarea class="form-control" id="tenantNotes" placeholder="Additional tenancy notes..."></textarea> 
+            </div> 
+          </div> 
+        </form> 
+      </div> 
+      <div class="modal-footer"> 
+        <button class="btn btn-secondary" onclick="closeTenantModal()"> Cancel </button> 
+        <button class="btn btn-primary" id="saveTenantBtn" onclick="requestSaveTenant()"> Save Tenant </button> 
+      </div> 
+    </div> 
+  </div>
+
+  <!-- ===================================================== PIN MODAL ====================================================== -->
+  <div class="modal-overlay" id="pinModal">
+    <div class="modal small-modal" onclick="event.stopPropagation()"> 
+      <div class="modal-header"> 
+        <div> 
+          <div class="modal-title"> 🔐 Protected Action </div> 
+          <div class="modal-subtitle" id="pinDescription"> Enter your management PIN. </div> 
+        </div> 
+        <button class="close-btn" onclick="closePinModal()"> × </button> 
+      </div> 
+      <div class="modal-body"> 
+        <div class="security-panel"> 
+          <div class="security-icon"> 🔒 </div> 
+          <div class="security-title"> Management PIN Required </div> 
+          <div class="security-text"> This action changes or accesses protected property records. </div> 
+        </div> 
+        <div class="pin-wrap"> 
+          <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" onkeydown=" if(event.key==='Enter'){ verifyPin(); } "> 
+          <div class="pin-error" id="pinError"> Incorrect PIN. Please try again. </div> 
+        </div> 
+      </div> 
+      <div class="modal-footer"> 
+        <button class="btn btn-secondary" onclick="closePinModal()"> Cancel </button> 
+        <button class="btn btn-primary" onclick="verifyPin()"> Unlock </button> 
+      </div> 
+    </div> 
+  </div>
+
+  <!-- ===================================================== PROTECTED ACTIONS MENU ====================================================== -->
+  <div class="modal-overlay" id="protectedActionOverlay">
+    <div class="modal small-modal" onclick="event.stopPropagation()"> 
+      <div class="modal-header"> 
+        <div> 
+          <div class="modal-title"> 🔐 Protected Actions </div> 
+          <div class="modal-subtitle" id="protectedActionSubtitle"> Property actions </div> 
+        </div> 
+        <button class="close-btn" onclick="closeProtectedActionMenu()"> × </button> 
+      </div> 
+      <div class="modal-body"> 
+        <div class="security-panel" id="protectedActionInfo"></div> 
+        <div id="protectedActionButtons" style=" display:grid; gap:7px; "></div> 
+      </div> 
+      <div class="modal-footer"> 
+        <button class="btn btn-secondary" onclick="closeProtectedActionMenu()"> Close </button> 
+      </div> 
+    </div> 
+  </div>
+
+  <!-- ===================================================== TOAST NOTIFICATION ====================================================== -->
+  <div id="toast" class="toast"></div>
+
+  <!-- ===================================================== JAVASCRIPT ====================================================== -->
+  <script>
+    /* ========================================================= DATABASE ========================================================= */ 
+    const DB_KEY = "ag_rental_database"; 
+    const PIN_KEY = "ag_rental_management_pin_hash"; 
+    let database = { houses:[] }; 
+    let pendingAction = null; 
+
+    /* ========================================================= BASIC HELPERS ========================================================= */ 
+    function loadDatabase(){ 
+      try{ 
+        const raw = localStorage.getItem( DB_KEY ); 
+        if(raw){ 
+          const parsed = JSON.parse(raw); 
+          if( parsed && Array.isArray( parsed.houses ) ){ 
+            database = parsed; 
+          } 
+        } 
+      }catch(error){ 
+        console.error( "Database load error:", error ); 
+        database = { houses:[] }; 
+      } 
+    } 
+
+    function saveDatabase(){ 
+      localStorage.setItem( DB_KEY, JSON.stringify(database) ); 
+    } 
+
+    function uid(prefix="id"){ 
+      return ( prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8) ); 
+    } 
+
+    function esc(value){ 
+      return String( value ?? "" ) 
+        .replace( /&/g, "&amp;" ) 
+        .replace( /</g,"&lt;").replace(/>/g, "&gt;" ) 
+        .replace( /"/g, "&quot;" ) 
+        .replace( /'/g, "&#039;" ); 
+    } 
+
+    function money(value){ 
+      return ( Number(value) || 0 ).toLocaleString( "en-KE", { minimumFractionDigits:0, maximumFractionDigits:2 } ); 
+    } 
+
+    function formatDate(value){ 
+      if(!value){ return "—"; } 
+      const date = new Date( value + ( String(value).length === 10 ? "T00:00:00" : "" ) ); 
+      if( Number.isNaN( date.getTime() ) ){ return value; } 
+      return date.toLocaleDateString( "en-GB", { day:"2-digit", month:"short", year:"numeric" } ); 
+    } 
+
+    function today(){ 
+      const date = new Date(); 
+      const y = date.getFullYear(); 
+      const m = String( date.getMonth()+1 ).padStart( 2, "0" ); 
+      const d = String( date.getDate() ).padStart( 2, "0" ); 
+      return `${y}-${m}-${d}`; 
+    } 
+
+    function toast(message){ 
+      const element = document.getElementById( "toast" ); 
+      if(!element) return;
+      element.textContent = message; 
+      element.classList.add( "show" ); 
+      clearTimeout( toast.timer ); 
+      toast.timer = setTimeout( () => { 
+        element.classList.remove( "show" ); 
+      }, 3500 ); 
+    } 
+
+    /* ========================================================= AVAILABLE HOUSE LOGIC ========================================================= */ 
+    function isHouseAvailable( house ){ 
+      if(!house){ return false; } 
+      if( String( house.status || "" ).toLowerCase() !== "vacant" ){ return false; } 
+      const tenants = Array.isArray( house.tenants ) ? house.tenants : []; 
+      const hasActiveTenant = tenants.some( tenant => String( tenant.status || "" ).toLowerCase() === "active" ); 
+      return !hasActiveTenant; 
+    } 
+
+    function getAvailableHouses(){ 
+      return database.houses.filter( house => isHouseAvailable( house ) ); 
+    } 
+
+    function handleAddTenant(){ 
+      const available = getAvailableHouses(); 
+      if(!available.length){ 
+        toast( "⚠️ No vacant house available! Please add a house 1st before adding a tenant." ); 
+        return; 
+      } 
+      openTenantModal(); 
+    } 
+
+    /* ========================================================= HASH / PIN ========================================================= */ 
+    async function hashText( text ){ 
+      const data = new TextEncoder().encode(text); 
+      const hash = await crypto.subtle.digest( "SHA-256", data ); 
+      return Array.from( new Uint8Array(hash) ).map( b => b.toString(16).padStart(2,"0") ).join(""); 
+    } 
+
+    async function ensureDefaultPin(){ 
+      const existing = localStorage.getItem( PIN_KEY ); 
+      if(!existing){ 
+        const hash = await hashText( "1234" ); 
+        localStorage.setItem( PIN_KEY, hash ); 
+      } 
+    } 
+
+    async function checkPin( pin ){ 
+      if( !/^\d{4}$/.test( pin ) ){ return false; } 
+      const stored = localStorage.getItem( PIN_KEY ); 
+      const hash = await hashText( pin ); 
+      return ( hash === stored ); 
+    } 
+
+    /* ========================================================= PROTECTED ACTION ========================================================= */ 
+    function requestProtectedAction( action, description ){ 
+      pendingAction = action; 
+      document.getElementById( "pinDescription" ).textContent = description || "Enter your management PIN."; 
+      document.getElementById( "pinInput" ).value = ""; 
+      document.getElementById( "pinError" ).classList.remove( "show" ); 
+      document.getElementById( "pinModal" ).classList.add( "open" ); 
+      setTimeout( () => { 
+        document.getElementById( "pinInput" ).focus(); 
+      }, 80 ); 
+    } 
+
+    function closePinModal(){ 
+      document.getElementById( "pinModal" ).classList.remove( "open" ); 
+      pendingAction = null; 
+    } 
+
+    async function verifyPin(){ 
+      const input = document.getElementById( "pinInput" ).value.trim(); 
+      const valid = await checkPin( input ); 
+      if(!valid){ 
+        document.getElementById( "pinError" ).classList.add( "show" ); 
+        document.getElementById( "pinInput" ).select(); 
+        return; 
+      } 
+      const action = pendingAction; 
+      closePinModal(); 
+      if(!action){ return; } 
+      switch( action.type ){ 
+        case "open-action-menu": showProtectedActionMenu( action.houseId ); break; 
+        case "house-save": saveHouse(); break; 
+        case "tenant-save": saveTenant(); break; 
+        case "house-delete": performDeleteHouse( action.houseId ); break; 
+        case "tenant-delete": performDeleteTenant( action.houseId, action.tenantId ); break; 
+      } 
+    } 
+
+    /* ========================================================= SETTINGS ========================================================= */ 
+    function goToSettings(){ 
+      window.location.href = "settings.html"; 
+    } 
+
+    /* ========================================================= PROTECTED ACTION MENU ========================================================= */ 
+    function openProtectedActions( houseId ){ 
+      requestProtectedAction( { type:"open-action-menu", houseId:houseId }, "Enter your management PIN to access actions for this property." ); 
+    } 
+
+    function showProtectedActionMenu( houseId ){ 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ 
+        toast( "House record was not found." ); 
+        return; 
+      } 
+      const tenants = Array.isArray( house.tenants ) ? house.tenants : []; 
+      const activeTenant = tenants.find( t => String( t.status || "" ).toLowerCase() === "active" ); 
+      const available = isHouseAvailable( house ); 
+      const info = document.getElementById( "protectedActionInfo" ); 
+      const buttons = document.getElementById( "protectedActionButtons" ); 
+      document.getElementById( "protectedActionSubtitle" ).textContent = `${house.houseNumber} • ${house.houseType}`; 
+      info.innerHTML = ` 
+        <div class="security-icon"> 🏠 </div> 
+        <div class="security-title"> ${esc(house.houseNumber)} </div> 
+        <div class="security-text"> 
+          ${esc( house.floorLocation || "Location not specified" )} • KES ${money( house.monthlyRent )} monthly rent 
+          ${ activeTenant ? `<br>Current tenant: <strong>${esc(activeTenant.name)}</strong>` : `<br> ${ available ? "House is available for a tenant" : "House is not currently available" } ` } 
+        </div> 
+      `; 
+      let html = ""; 
+      if(available){ 
+        html += ` 
+          <button class="btn btn-success" style=" width:100%; justify-content:flex-start; " onclick=" protectedAddTenant( '${esc(house.id)}' ) "> 
+            + &nbsp; Add Tenant 
+          </button> 
+        `; 
+      }else{ 
+        html += ` 
+          <button class="btn btn-secondary" style=" width:100%; justify-content:flex-start; opacity:.6; " disabled title="House is not vacant or available"> 
+            🔒 &nbsp; Add Tenant — House Unavailable 
+          </button> 
+        `; 
+      } 
+      html += ` 
+        <button class="btn btn-primary" style=" width:100%; justify-content:flex-start; " onclick=" protectedEditHouse( '${esc(house.id)}' ) "> 
+          ✎ &nbsp; Edit House 
+        </button> 
+      `; 
+      if(activeTenant){ 
+        html += ` 
+          <button class="btn btn-secondary" style=" width:100%; justify-content:flex-start; " onclick=" protectedEditTenant( '${esc(house.id)}', '${esc(activeTenant.id)}' ) "> 
+            📝 &nbsp; Edit Tenant 
+          </button> 
+          <button class="btn btn-danger" style=" width:100%; justify-content:flex-start; " onclick=" protectedDeleteTenant( '${esc(house.id)}', '${esc(activeTenant.id)}' ) "> 
+            👤 × &nbsp; Delete Tenant 
+          </button> 
+        `; 
+      } 
+      html += ` 
+        <button class="btn btn-danger" style=" width:100%; justify-content:flex-start; " onclick=" protectedDeleteHouse( '${esc(house.id)}' ) "> 
+          🗑 &nbsp; Delete House 
+        </button> 
+      `; 
+      buttons.innerHTML = html; 
+      document.getElementById( "protectedActionOverlay" ).classList.add( "open" ); 
+    } 
+
+    function closeProtectedActionMenu(){ 
+      document.getElementById( "protectedActionOverlay" ).classList.remove( "open" ); 
+    } 
+
+    function protectedAddTenant( houseId ){ 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if( !isHouseAvailable( house ) ){ 
+        toast( "This house is not vacant or available." ); 
+        return; 
+      } 
+      closeProtectedActionMenu(); 
+      openTenantForHouse( houseId ); 
+    } 
+
+    function protectedEditHouse( houseId ){ 
+      closeProtectedActionMenu(); 
+      editHouse( houseId ); 
+    } 
+
+    function protectedEditTenant( houseId, tenantId ){ 
+      closeProtectedActionMenu(); 
+      editTenant( houseId, tenantId ); 
+    } 
+
+    function protectedDeleteTenant( houseId, tenantId ){ 
+      closeProtectedActionMenu(); 
+      requestDeleteTenant( houseId, tenantId ); 
+    } 
+
+    function protectedDeleteHouse( houseId ){ 
+      closeProtectedActionMenu(); 
+      requestDeleteHouse( houseId ); 
+    } 
+
+    /* ========================================================= HOUSE MODAL ========================================================= */ 
+    function openHouseModal( houseId = null ){ 
+      document.getElementById( "houseForm" ).reset(); 
+      document.getElementById( "houseId" ).value = ""; 
+      document.getElementById( "houseModalTitle" ).textContent = "Add House"; 
+      document.getElementById( "houseStatus" ).value = "Vacant"; 
+      document.getElementById( "standardDeposit" ).value = "0"; 
+      if(houseId){ 
+        const house = database.houses.find( h => h.id === houseId ); 
+        if(!house){ return; } 
+        document.getElementById( "houseModalTitle" ).textContent = "Edit House"; 
+        document.getElementById( "houseId" ).value = house.id; 
+        document.getElementById( "houseNumber" ).value = house.houseNumber || ""; 
+        document.getElementById( "houseType" ).value = house.houseType || ""; 
+        document.getElementById( "floorLocation" ).value = house.floorLocation || ""; 
+        document.getElementById( "monthlyRent" ).value = house.monthlyRent || ""; 
+        document.getElementById( "standardDeposit" ).value = house.deposit || 0; 
+        document.getElementById( "houseStatus" ).value = house.status || "Vacant"; 
+        document.getElementById( "houseNotes" ).value = house.notes || ""; 
+      } 
+      document.getElementById( "houseModal" ).classList.add( "open" ); 
+    } 
+
+    function closeHouseModal(){ 
+      document.getElementById( "houseModal" ).classList.remove( "open" ); 
+    } 
+
+    function requestSaveHouse(){ 
+      const form = document.getElementById( "houseForm" ); 
+      if( !form.reportValidity() ){ return; } 
+      requestProtectedAction( { type:"house-save" }, "Enter your PIN to save or update this house record." ); 
+    } 
+
+    function saveHouse(){ 
+      const id = document.getElementById( "houseId" ).value.trim(); 
+      const houseNumber = document.getElementById( "houseNumber" ).value.trim(); 
+      const houseType = document.getElementById( "houseType" ).value; 
+      const floorLocation = document.getElementById( "floorLocation" ).value.trim(); 
+      const monthlyRent = Number( document.getElementById( "monthlyRent" ).value ) || 0; 
+      const deposit = Number( document.getElementById( "standardDeposit" ).value ) || 0; 
+      const status = document.getElementById( "houseStatus" ).value; 
+      const notes = document.getElementById( "houseNotes" ).value.trim(); 
+      const duplicate = database.houses.find( h => h.houseNumber.trim().toLowerCase() === houseNumber.toLowerCase() && h.id !== id ); 
+      if(duplicate){ 
+        toast( "That house number already exists." ); 
+        return; 
+      } 
+      const existingHouse = id ? database.houses.find( h => h.id === id ) : null; 
+      if( existingHouse && status === "Vacant" ){ 
+        const hasActiveTenant = ( existingHouse.tenants || [] ).some( tenant => String( tenant.status || "" ).toLowerCase() === "active" ); 
+        if(hasActiveTenant){ 
+          toast( "This house has an active tenant. End or deactivate the tenant before marking the house vacant." ); 
+          return; 
+        } 
+      } 
+      const now = new Date().toISOString(); 
+      if(id){ 
+        const house = database.houses.find( h => h.id === id ); 
+        if(!house){ 
+          toast( "House not found." ); 
+          return; 
+        } 
+        house.houseNumber = houseNumber; 
+        house.houseType = houseType; 
+        house.floorLocation = floorLocation; 
+        house.monthlyRent = monthlyRent; 
+        house.deposit = deposit; 
+        house.status = status; 
+        house.notes = notes; 
+        house.updatedAt = now; 
+        toast( "House updated successfully." ); 
+      }else{ 
+        database.houses.push({ id: uid("house"), houseNumber, houseType, floorLocation, monthlyRent, deposit, status, notes, tenants:[], createdAt:now, updatedAt:now }); 
+        toast( "House created successfully." ); 
+      } 
+      saveDatabase(); 
+      closeHouseModal(); 
+      renderAll(); 
+    } 
+
+    /* ========================================================= TENANT MODAL ========================================================= */ 
+    function openTenantModal(){ 
+      openTenantForHouse( "" ); 
+    } 
+
+    function openTenantForHouse( houseId ){ 
+      const available = getAvailableHouses(); 
+      if(!available.length){ 
+        toast( "⚠️ No vacant house available! Please add a house 1st before adding a tenant." ); 
+        return; 
+      } 
+      if( houseId ){ 
+        const selectedHouse = database.houses.find( h => h.id === houseId ); 
+        if( !isHouseAvailable( selectedHouse ) ){ 
+          toast( "This house is not vacant or available." ); 
+          return; 
+        } 
+      } 
+      document.getElementById( "tenantForm" ).reset(); 
+      document.getElementById( "tenantId" ).value = ""; 
+      document.getElementById( "tenantHouseId" ).value = houseId || ""; 
+      document.getElementById( "tenantModalTitle" ).textContent = "Add Tenant"; 
+      document.getElementById( "peopleStaying" ).value = "1"; 
+      document.getElementById( "depositAmount" ).value = "0"; 
+      document.getElementById( "depositRefundedAmount" ).value = "0"; 
+      document.getElementById( "depositStatus" ).value = "Held"; 
+      document.getElementById( "tenantStatus" ).value = "Active"; 
+      document.getElementById( "moveInDate" ).value = today(); 
+      populateAvailableHouseSelect( houseId ); 
+      syncTenantHouse(); 
+      document.getElementById( "tenantModal" ).classList.add( "open" ); 
+    } 
+
+    function closeTenantModal(){ 
+      document.getElementById( "tenantModal" ).classList.remove( "open" ); 
+    } 
+
+    function populateAvailableHouseSelect( selectedId = "" ){ 
+      const select = document.getElementById( "tenantHouseSelect" ); 
+      const available = getAvailableHouses(); 
+      select.innerHTML = ` <option value=""> Select available house </option> `; 
+      available.slice().sort( (a,b) => String( a.houseNumber ).localeCompare( String( b.houseNumber ) ) ).forEach( house => { 
+        const option = document.createElement( "option" ); 
+        option.value = house.id; 
+        option.textContent = `${house.houseNumber} • ${house.houseType} • KES ${money(house.monthlyRent)}`; 
+        if( house.id === selectedId ){ option.selected = true; } 
+        select.appendChild( option ); 
+      } ); 
+      const saveButton = document.getElementById( "saveTenantBtn" ); 
+      if(!available.length){ 
+        select.disabled = true; 
+        saveButton.disabled = true; 
+        document.getElementById( "availableHouseHelp" ).textContent = "No vacant or available house exists. Add a house or make one vacant first."; 
+      }else{ 
+        select.disabled = false; 
+        saveButton.disabled = false; 
+        document.getElementById( "availableHouseHelp" ).textContent = "Only vacant houses without an active tenant can be selected."; 
+      } 
+    } 
+
+    function syncTenantHouse(){ 
+      const houseId = document.getElementById( "tenantHouseSelect" ).value; 
+      document.getElementById( "tenantHouseId" ).value = houseId; 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ 
+        document.getElementById( "tenantRent" ).value = ""; 
+        return; 
+      } 
+      document.getElementById( "tenantRent" ).value = house.monthlyRent || 0; 
+      const depositField = document.getElementById( "depositAmount" ); 
+      if( !document.getElementById( "tenantId" ).value && ( !depositField.value || Number( depositField.value ) === 0 ) ){ 
+        depositField.value = house.deposit || 0; 
+      } 
+    } 
+
+    function requestSaveTenant(){ 
+      const form = document.getElementById( "tenantForm" ); 
+      if( !form.reportValidity() ){ return; } 
+      const houseId = document.getElementById( "tenantHouseSelect" ).value; 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ 
+        toast( "Select an available house first." ); 
+        return; 
+      } 
+      if( !isHouseAvailable( house ) ){ 
+        toast( "This house is no longer available." ); 
+        populateAvailableHouseSelect(); 
+        return; 
+      } 
+      const deposit = Number( document.getElementById( "depositAmount" ).value ) || 0; 
+      const refunded = Number( document.getElementById( "depositRefundedAmount" ).value ) || 0; 
+      const depositStatus = document.getElementById( "depositStatus" ).value; 
+      if( refunded > deposit ){ 
+        toast( "Refunded amount cannot exceed the deposit." ); 
+        return; 
+      } 
+      if( depositStatus === "Fully Refunded" && ( refunded !== deposit || !document.getElementById( "depositRefundDate" ).value ) ){ 
+        toast( "Fully refunded requires the full deposit and a refund date." ); 
+        return; 
+      } 
+      if( depositStatus === "Partially Refunded" && refunded <= 0 ){ 
+        toast( "Enter the amount partially refunded." ); 
+        return; 
+      } 
+      requestProtectedAction( { type:"tenant-save" }, "Enter your PIN to save or update this tenant record." ); 
+    } 
+
+    function saveTenant(){ 
+      const houseId = document.getElementById( "tenantHouseSelect" ).value; 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ 
+        toast( "Selected house no longer exists." ); 
+        return; 
+      } 
+      if( !isHouseAvailable( house ) ){ 
+        toast( "This house is no longer available." ); 
+        closeTenantModal(); 
+        renderAll(); 
+        return; 
+      } 
+      if( !Array.isArray( house.tenants ) ){ house.tenants = []; } 
+      const tenantId = document.getElementById( "tenantId" ).value.trim(); 
+      const tenant = { 
+        id: tenantId || uid("tenant"), 
+        name: document.getElementById( "tenantName" ).value.trim(), 
+        email: document.getElementById( "tenantEmail" ).value.trim(), 
+        phone: document.getElementById( "tenantPhone" ).value.trim(), 
+        idNumber: document.getElementById( "tenantIdNumber" ).value.trim(), 
+        kraPin: document.getElementById( "tenantKraPin" ).value.trim(), 
+        nextOfKinName: document.getElementById( "nextOfKinName" ).value.trim(), 
+        nextOfKinPhone: document.getElementById( "nextOfKinPhone" ).value.trim(), 
+        peopleStaying: Number( document.getElementById( "peopleStaying" ).value ) || 1, 
+        moveInDate: document.getElementById( "moveInDate" ).value, 
+        leaseEndDate: document.getElementById( "leaseEndDate" ).value, 
+        status: document.getElementById( "tenantStatus" ).value, 
+        monthlyRent: Number( document.getElementById( "tenantRent" ).value ) || Number( house.monthlyRent ) || 0, 
+        depositAmount: Number( document.getElementById( "depositAmount" ).value ) || 0, 
+        depositStatus: document.getElementById( "depositStatus" ).value, 
+        depositRefundedAmount: Number( document.getElementById( "depositRefundedAmount" ).value ) || 0, 
+        depositRefundDate: document.getElementById( "depositRefundDate" ).value, 
+        depositNotes: document.getElementById( "depositNotes" ).value.trim(), 
+        notes: document.getElementById( "tenantNotes" ).value.trim(), 
+        updatedAt: new Date().toISOString() 
+      }; 
+      const existingIndex = house.tenants.findIndex( t => t.id === tenantId ); 
+      if(existingIndex >= 0){ 
+        tenant.createdAt = house.tenants[ existingIndex ].createdAt || new Date().toISOString(); 
+        house.tenants[ existingIndex ] = tenant; 
+        toast( "Tenant updated successfully." ); 
+      }else{ 
+        tenant.createdAt = new Date().toISOString(); 
+        house.tenants.push( tenant ); 
+        toast( "Tenant added successfully." ); 
+      } 
+      const hasActiveTenant = house.tenants.some( t => String( t.status || "" ).toLowerCase() === "active" ); 
+      if(hasActiveTenant){ house.status = "Occupied"; } 
+      house.updatedAt = new Date().toISOString(); 
+      saveDatabase(); 
+      closeTenantModal(); 
+      renderAll(); 
+    } 
+
+    /* ========================================================= EDIT HOUSE ========================================================= */ 
+    function editHouse( houseId ){ openHouseModal( houseId ); } 
+
+    /* ========================================================= EDIT TENANT ========================================================= */ 
+    function editTenant( houseId, tenantId ){ 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ return; } 
+      const tenant = ( house.tenants || [] ).find( t => t.id === tenantId ); 
+      if(!tenant){ 
+        toast( "Tenant not found." ); 
+        return; 
+      } 
+      document.getElementById( "tenantForm" ).reset(); 
+      document.getElementById( "tenantModalTitle" ).textContent = "Edit Tenant"; 
+      document.getElementById( "tenantId" ).value = tenant.id; 
+      document.getElementById( "tenantHouseId" ).value = house.id; 
+      populateHouseSelectForEdit( house.id ); 
+      document.getElementById( "tenantHouseSelect" ).value = house.id; 
+      document.getElementById( "tenantName" ).value = tenant.name || ""; 
+      document.getElementById( "tenantEmail" ).value = tenant.email || ""; 
+      document.getElementById( "tenantPhone" ).value = tenant.phone || ""; 
+      document.getElementById( "tenantIdNumber" ).value = tenant.idNumber || ""; 
+      document.getElementById( "tenantKraPin" ).value = tenant.kraPin || ""; 
+      document.getElementById( "nextOfKinName" ).value = tenant.nextOfKinName || ""; 
+      document.getElementById( "nextOfKinPhone" ).value = tenant.nextOfKinPhone || ""; 
+      document.getElementById( "peopleStaying" ).value = tenant.peopleStaying || 1; 
+      document.getElementById( "moveInDate" ).value = tenant.moveInDate || ""; 
+      document.getElementById( "leaseEndDate" ).value = tenant.leaseEndDate || ""; 
+      document.getElementById( "tenantStatus" ).value = tenant.status || "Active"; 
+      document.getElementById( "tenantRent" ).value = tenant.monthlyRent ?? house.monthlyRent ?? 0; 
+      document.getElementById( "depositAmount" ).value = tenant.depositAmount ?? 0; 
+      document.getElementById( "depositStatus" ).value = tenant.depositStatus || "Held"; 
+      document.getElementById( "depositRefundedAmount" ).value = tenant.depositRefundedAmount ?? 0; 
+      document.getElementById( "depositRefundDate" ).value = tenant.depositRefundDate || ""; 
+      document.getElementById( "depositNotes" ).value = tenant.depositNotes || ""; 
+      document.getElementById( "tenantNotes" ).value = tenant.notes || ""; 
+      document.getElementById( "saveTenantBtn" ).disabled = false; 
+      document.getElementById( "tenantModal" ).classList.add( "open" ); 
+    } 
+
+    function populateHouseSelectForEdit( currentHouseId ){ 
+      const select = document.getElementById( "tenantHouseSelect" ); 
+      const houses = database.houses.filter( house => house.id === currentHouseId ); 
+      select.innerHTML = ""; 
+      houses.forEach( house => { 
+        const option = document.createElement( "option" ); 
+        option.value = house.id; 
+        option.textContent = `${house.houseNumber} • ${house.houseType} • KES ${money(house.monthlyRent)}`; 
+        option.selected = true; 
+        select.appendChild( option ); 
+      } ); 
+      select.disabled = true; 
+      document.getElementById( "availableHouseHelp" ).textContent = "Existing tenant is being edited in the current house."; 
+    } 
+
+    /* ========================================================= DELETE TENANT ========================================================= */ 
+    function requestDeleteTenant( houseId, tenantId ){ 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ return; } 
+      const tenant = ( house.tenants || [] ).find( t => t.id === tenantId ); 
+      if(!tenant){ return; } 
+      if( !confirm( `Delete tenant "${tenant.name}"?\n\nThis cannot be undone.` ) ){ return; } 
+      requestProtectedAction( { type:"tenant-delete", houseId, tenantId }, `Enter your PIN to permanently delete ${tenant.name}.` ); 
+    } 
+
+    function performDeleteTenant( houseId, tenantId ){ 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ return; } 
+      const before = ( house.tenants || [] ).length; 
+      house.tenants = ( house.tenants || [] ).filter( t => t.id !== tenantId ); 
+      if( house.tenants.length === before ){ 
+        toast( "Tenant was not found." ); 
+        return; 
+      } 
+      const hasActive = house.tenants.some( t => String( t.status || "" ).toLowerCase() === "active" ); 
+      if(!hasActive){ house.status = "Vacant"; } 
+      house.updatedAt = new Date().toISOString(); 
+      saveDatabase(); 
+      renderAll(); 
+      toast( "Tenant deleted. House is now available." ); 
+    } 
+
+    /* ========================================================= DELETE HOUSE ========================================================= */ 
+    function requestDeleteHouse( houseId ){ 
+      const house = database.houses.find( h => h.id === houseId ); 
+      if(!house){ return; } 
+      const tenantCount = ( house.tenants || [] ).length; 
+      const message = tenantCount ? `Delete "${house.houseNumber}"?\n\nThis house has ${tenantCount} tenant record(s). Deleting the house will also delete those tenant records from this local database.` : `Delete "${house.houseNumber}"?`; 
+      if( !confirm( message ) ){ return; } 
+      requestProtectedAction( { type:"house-delete", houseId }, `Enter your PIN to permanently delete ${house.houseNumber}.` ); 
+    } 
+
+    function performDeleteHouse( houseId ){ 
+      const index = database.houses.findIndex( h => h.id === houseId ); 
+      if(index < 0){ 
+        toast( "House was not found." ); 
+        return; 
+      } 
+      database.houses.splice( index, 1 ); 
+      saveDatabase(); 
+      renderAll(); 
+      toast( "House deleted." ); 
+    } 
+
+    /* ========================================================= DIRECTORY ========================================================= */ 
+    function renderDirectory(){ 
+      const body = document.getElementById( "directoryBody" ); 
+      const search = document.getElementById( "searchInput" ).value.trim().toLowerCase(); 
+      const status = document.getElementById( "statusFilter" ).value; 
+      const type = document.getElementById( "typeFilter" ).value; 
+      const rows = []; 
+      database.houses.forEach( house => { 
+        const tenants = Array.isArray( house.tenants ) ? house.tenants : []; 
+        const activeTenant = tenants.find( t => String( t.status || "" ).toLowerCase() === "active" ); 
+        const tenant = activeTenant || tenants[0] || null; 
+        const haystack = [ house.houseNumber, house.houseType, house.floorLocation, house.status, tenant?.name, tenant?.phone, tenant?.idNumber, tenant?.kraPin ].join(" ").toLowerCase(); 
+        if( search && !haystack.includes( search ) ){ return; } 
+        if( status !== "all" && String( house.status || "" ).toLowerCase() !== status ){ return; } 
+        if( type !== "all" && house.houseType !== type ){ return; } 
+        rows.push({ house, tenant }); 
+      } ); 
+      document.getElementById( "resultCount" ).textContent = `${rows.length} record${rows.length === 1 ? "" : "s"}`; 
+      if(!rows.length){ 
+        body.innerHTML = ` 
+          <tr> 
+            <td colspan="12"> 
+              <div class="empty"> 
+                <div class="empty-icon"> 🏠 </div> 
+                <h3> No property records found </h3> 
+                <p> Create a house first. A tenant can only be added when a vacant house is available. </p> 
+              </div> 
+            </td> 
+          </tr> 
+        `; 
+        return; 
+      } 
+      body.innerHTML = rows.map( ({ house, tenant }) => { 
+        const deposit = tenant ? Number( tenant.depositAmount ) || 0 : 0; 
+        const depositStatus = tenant ? ( tenant.depositStatus || "Held" ) : "—"; 
+        const people = tenant ? ( tenant.peopleStaying || 0 ) : "—"; 
+        return ` 
+          <tr> 
+            <td> 
+              <div class="house-main"> ${esc( house.houseNumber )} </div> 
+              <div class="house-sub"> ${ tenant ? "Tenant assigned" : ( isHouseAvailable(house) ? "Available" : "No active tenant" ) } </div> 
+            </td> 
+            <td> ${esc( house.houseType || "—" )} </td> 
+            <td> ${esc( house.floorLocation || "—" )} </td> 
+            <td class="money"> KES ${money( house.monthlyRent )} </td> 
+            <td> ${statusBadge( house.status )} </td> 
+            <td> ${ tenant ? ` <div class="house-main"> ${esc( tenant.name )} </div> <div class="house-sub"> ${esc( tenant.idNumber || "No ID recorded" )} </div> ` : ` <span style="color:#94a3b8;"> — </span> ` } </td> 
+            <td> ${ tenant ? esc( tenant.phone || "—" ) : "—" } </td> 
+            <td> ${ tenant ? esc( people ) : "—" } </td> 
+            <td class="money"> ${ tenant ? `KES ${money(deposit)}` : "—" } </td> 
+            <td> ${ tenant ? depositBadge( depositStatus ) : "—" } </td> 
+            <td> ${ tenant ? formatDate( tenant.moveInDate ) : "—" } </td> 
+            <td> 
+              <button class="protected-btn" onclick=" openProtectedActions( '${esc(house.id)}' ) "> 🔐 Protected </button> 
+            </td> 
+          </tr> 
+        `; 
+      } ).join(""); 
+    } 
+
+    function statusBadge( status ){ 
+      const value = status || "Vacant"; 
+      let cls = "badge-vacant"; 
+      if( value === "Occupied" ){ cls = "badge-occupied"; }
+      else if( value === "Maintenance" ){ cls = "badge-maintenance"; } 
+      return ` <span class="badge ${cls}"> ${esc(value === "Vacant" ? "Available" : value)} </span> `; 
+    } 
+
+    function depositBadge( status ){ 
+      let cls = "badge-held"; 
+      if( status === "Fully Refunded" ){ cls = "badge-refunded"; }
+      else if( status === "Partially Refunded" ){ cls = "badge-partial"; }
+      else if( status === "Applied to Charges" ){ cls = "badge-applied"; } 
+      return ` <span class="badge ${cls}"> ${esc(status)} </span> `; 
+    } 
+
+    /* ========================================================= FILTER TYPES ========================================================= */ 
+    function populateTypeFilter(){ 
+      const select = document.getElementById( "typeFilter" ); 
+      const current = select.value; 
+      const types = [ ...new Set( database.houses.map( h => h.houseType ).filter(Boolean) ) ].sort(); 
+      select.innerHTML = ` <option value="all"> All Types </option> `; 
+      types.forEach( type => { 
+        const option = document.createElement( "option" ); 
+        option.value = type; 
+        option.textContent = type; 
+        select.appendChild( option ); 
+      } ); 
+      if( types.includes( current ) ){ select.value = current; } 
+    } 
+
+    /* ========================================================= STATISTICS ========================================================= */ 
+    function renderStats(){ 
+      const houses = database.houses; 
+      const occupied = houses.filter( h => String( h.status || "" ).toLowerCase() === "occupied" ).length; 
+      const available = getAvailableHouses().length; 
+      let activeTenants = 0; 
+      let depositsHeld = 0; 
+      houses.forEach( house => { 
+        ( house.tenants || [] ).forEach( tenant => { 
+          if( String( tenant.status || "" ).toLowerCase() === "active" ){ activeTenants++; } 
+          const amount = Number( tenant.depositAmount ) || 0; 
+          const refunded = Number( tenant.depositRefundedAmount ) || 0; 
+          if( tenant.depositStatus === "Held" ){ depositsHeld += amount; }
+          else if( tenant.depositStatus === "Partially Refunded" ){ depositsHeld += Math.max( 0, amount - refunded ); } 
+        } ); 
+      } ); 
+      document.getElementById( "statHouses" ).textContent = houses.length; 
+      document.getElementById( "statOccupied" ).textContent = occupied; 
+      document.getElementById( "statVacant" ).textContent = available; 
+      document.getElementById( "statTenants" ).textContent = activeTenants; 
+      document.getElementById( "statDeposits" ).textContent = `KES ${money( depositsHeld )}`; 
+
+      const addTenant = document.getElementById( "topAddTenantBtn" ); 
+      if(!available){ 
+        addTenant.disabled = false; 
+        addTenant.title = "Click to add tenant (Requires an available house)"; 
+      }else{ 
+        addTenant.disabled = false; 
+        addTenant.title = "Add tenant"; 
+      } 
+    } 
+
+    /* ========================================================= RENDER ========================================================= */ 
+    function renderAll(){ 
+      populateTypeFilter(); 
+      renderStats(); 
+      renderDirectory(); 
+    } 
+
+    /* ========================================================= MODAL EVENTS ========================================================= */ 
+    document.getElementById( "houseModal" ).addEventListener( "click", function(event){ if( event.target === this ){ closeHouseModal(); } } ); 
+    document.getElementById( "tenantModal" ).addEventListener( "click", function(event){ if( event.target === this ){ closeTenantModal(); } } ); 
+    document.getElementById( "pinModal" ).addEventListener( "click", function(event){ if( event.target === this ){ closePinModal(); } } ); 
+    document.getElementById( "protectedActionOverlay" ).addEventListener( "click", function(event){ if( event.target === this ){ closeProtectedActionMenu(); } } ); 
+
+    /* ========================================================= ESCAPE ========================================================= */ 
+    document.addEventListener( "keydown", function(event){ 
+      if( event.key !== "Escape" ){ return; } 
+      closeHouseModal(); 
+      closeTenantModal(); 
+      closePinModal(); 
+      closeProtectedActionMenu(); 
+    } ); 
+
+    /* ========================================================= INITIALIZE ========================================================= */ 
+    (async function(){ 
+      await ensureDefaultPin(); 
+      loadDatabase(); 
+      renderAll(); 
+    })();
+  </script>
+</body>
+</html>
