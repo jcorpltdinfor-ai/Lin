@@ -233,10 +233,9 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
 <div id="panel">
   <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 12px;">
-      <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;" id="sessionUserBadge">SESSION: ...</div>
-      <button onclick="window.location.href='admin.html'" title="Log Out" style="width: auto; padding: 5px 9px; font-size: 9.5px; font-weight: 700; background: rgba(255,90,95,0.12); color: var(--saxo-red); border: 1px solid rgba(255,90,95,0.3); border-radius: 6px; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: 0.2s;">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-          <span>Log Out</span>
+      <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px;" id="sessionUserBadge">DISPATCH PORTAL</div>
+      <button onclick="window.location.reload()" title="Refresh" style="width: auto; padding: 5px 9px; font-size: 9.5px; font-weight: 700; background: rgba(0,163,224,0.12); color: var(--saxo-blue); border: 1px solid rgba(0,163,224,0.3); border-radius: 6px; display: flex; align-items: center; gap: 4px; cursor: pointer; transition: 0.2s;">
+          <span>Refresh</span>
       </button>
   </div>
 
@@ -250,18 +249,11 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
   <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
 
-  <div class="control-group" style="margin-bottom:10px;">
-    <span class="control-label">Register New Vehicle</span>
-    <input type="text" id="newCarName" placeholder="Number Plate" style="margin-bottom:6px; font-size:11px; text-transform: uppercase;">
-    <input type="text" id="newCarSubId" placeholder="Car ID / Sub ID" style="margin-bottom:8px; font-size:10px;">
-    <button onclick="window.requestAddFleetVehicle()" class="btn-primary" style="font-size:11px; padding:11px; box-shadow: 0 4px 12px rgba(0,163,224,0.2);">+ REGISTER VEHICLE</button>
-  </div>
-
   <div class="control-label" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>Fleet Roster</span>
+      <span>Dispatched Fleet Roster</span>
       <span id="fleetCountBadge" style="background:var(--saxo-navy); color:#fff; padding:1px 6px; border-radius:10px; font-size:9px;">0 Units</span>
   </div>
-  <div id="fleetListContainer" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; padding-right: 2px;"></div>
+  <div id="fleetListContainer" style="max-height: 220px; overflow-y: auto; margin-bottom: 10px; padding-right: 2px;"></div>
 
   <div class="control-group" style="margin-bottom:8px;">
     <span class="control-label">Tactical Orientation</span>
@@ -283,15 +275,6 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   <div class="grid-2">
     <button onclick="window.secureAddFence()" style="background:var(--saxo-slate)">+ FENCE</button>
     <button onclick="window.clearGeofence()" style="background:#444">CLR FENCE</button>
-  </div>
-
-  <div class="control-group" style="margin-bottom:8px;">
-    <span class="control-label">History Archive (Selected Car)</span>
-    <input type="date" id="historyDate" style="margin-bottom:5px;">
-    <div class="grid-2">
-        <button id="historyBtn" class="btn-purple">RENDER</button>
-        <button onclick="window.clearHistoryMap()" style="background:#444">CLEAR</button>
-    </div>
   </div>
 
   <div class="control-group" style="margin-bottom:10px;">
@@ -318,9 +301,8 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
   
   <input id="search" placeholder="Search Destination..." style="margin-bottom:5px;">
   <button onclick="window.searchPlace()" class="btn-primary" style="margin-bottom:5px;">INITIATE ROUTE</button>
-  <button onclick="window.openSystemReset()" style="background:var(--saxo-red); font-size:9px; opacity:0.6;">SYSTEM RESET</button>
   
-  <div id="logDisplay">Admin View Portal Initialized.</div>
+  <div id="logDisplay">Dispatches Sync Portal Initialized.</div>
 </div>
 
 <script type="module">
@@ -335,39 +317,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const getStoredEmail = () => {
-    const keys = ['ag_user_email', 'userEmail', 'currentUserEmail', 'email', 'logged_user', 'user', 'admin_email', 'username', 'account_email'];
-    for (let k of keys) {
-        const val = localStorage.getItem(k);
-        if (val && val.trim().length > 0) return val.trim().toLowerCase();
-    }
-    return 'default_user';
-};
-
-const currentUserEmail = getStoredEmail();
-const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
-document.getElementById('sessionUserBadge').innerText = currentUserEmail;
-
-const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
+const STORAGE_SELECTED_KEY = `ag_selected_dispatch_car`;
 
 let fleet = [];
 let carLatestData = {};
 let selectedCarName = localStorage.getItem(STORAGE_SELECTED_KEY) || "";
-
-// Helper to normalize data structure between standard format and OwnTracks payload keys (lon, vel, tst, acc)
-function normalizeCarData(data) {
-    if (!data) return null;
-    return {
-        lat: data.lat,
-        lng: data.lng !== undefined ? data.lng : data.lon,
-        speed: data.speed !== undefined ? data.speed : (data.vel !== undefined ? data.vel : 0),
-        ts: data.ts !== undefined ? data.ts : (data.tst !== undefined ? data.tst * 1000 : (data.timestamp || Date.now())),
-        accuracy: data.accuracy !== undefined ? data.accuracy : (data.acc !== undefined ? data.acc : 0),
-        destination: data.destination,
-        geofence: data.geofence,
-        subId: data.subId
-    };
-}
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
@@ -408,7 +362,7 @@ window.sendPush = (msg, targetName = selectedCarName) => {
         setTimeout(() => toast.classList.remove('show'), 4000);
 
         const carObj = fleet.find(c => c.name === targetName);
-        const carData = normalizeCarData(carLatestData[targetName]) || {};
+        const carData = carLatestData[targetName] || {};
         const targetSubId = carData.subId || (carObj ? carObj.subId : "") || window.currentDeviceSubId;
         
         const payload = {
@@ -450,56 +404,6 @@ window.openAdminModal = (t, d, cb) => {
 };
 window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
 
-window.requestAddFleetVehicle = () => {
-    const name = document.getElementById('newCarName').value.trim().toUpperCase();
-    const subId = document.getElementById('newCarSubId').value.trim();
-
-    if(!name) {
-        window.showAlertModal("VALIDATION ERROR", "Please provide the car number plate (e.g. KAU 528F).");
-        return;
-    }
-
-    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if(!subId || subId.length !== 36 || !uuidV4Regex.test(subId)) {
-        window.showAlertModal("REGISTRATION BLOCKED", "Invalid OneSignal Subscription ID format or length. A valid 36-character UUID is strictly required.");
-        return;
-    }
-
-    if(fleet.some(c => c.name === name)) {
-        window.showAlertModal("REGISTRATION BLOCKED", "Vehicle already exists in your fleet.");
-        return;
-    }
-
-    window.openAdminModal("AUTHORIZE REGISTRATION", `Enter password to register vehicle: ${name}`, () => {
-        document.getElementById('newCarName').value = "";
-        document.getElementById('newCarSubId').value = "";
-
-        update(ref(db, `users/${safeEmail}/cars/${name}`), { subId });
-        window.selectCar(name);
-        window.showAlertModal("SUCCESS", `Vehicle ${name} successfully registered to fleet.`);
-    });
-};
-
-window.requestRemoveFleetCar = (name) => {
-    window.openAdminModal("AUTHORIZE REMOVAL", `Enter password to remove vehicle (${name})`, () => {
-        if(selectedCarName === name && activeMarker) {
-            map.removeLayer(activeMarker);
-            activeMarker = null;
-        }
-        set(ref(db, `users/${safeEmail}/cars/${name}`), null);
-        
-        if(selectedCarName === name && fleet.length > 1) {
-            const remaining = fleet.filter(c => c.name !== name);
-            if(remaining.length > 0) window.selectCar(remaining[0].name);
-        } else if(fleet.length <= 1) {
-            selectedCarName = "";
-            localStorage.removeItem(STORAGE_SELECTED_KEY);
-            renderFleetUI();
-        }
-        window.showAlertModal("VEHICLE REMOVED", `Unit ${name} has been removed from the active fleet.`);
-    });
-};
-
 window.selectCar = (name) => {
     selectedCarName = name;
     localStorage.setItem(STORAGE_SELECTED_KEY, name);
@@ -524,7 +428,7 @@ window.selectCar = (name) => {
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
-    const data = normalizeCarData(carLatestData[name]);
+    const data = carLatestData[name];
     if(data && data.lat && data.lng) {
         const pos = [data.lat, data.lng];
         const spd = (parseFloat(data.speed) || 0).toFixed(1);
@@ -538,7 +442,7 @@ window.selectCar = (name) => {
             .bindTooltip(name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
             .bindPopup(`<b>${name}</b><br>Speed: ${spd} km/h`);
 
-        const online = (Date.now() - data.ts) < 30000;
+        const online = (Date.now() - data.ts) < 60000;
         document.getElementById('statusHeader').className = online ? "online" : "offline";
         document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
@@ -558,7 +462,7 @@ window.focusCar = (name) => {
     if(name !== selectedCarName) {
         window.selectCar(name);
     }
-    const data = normalizeCarData(carLatestData[name]);
+    const data = carLatestData[name];
     if(data && data.lat && data.lng) {
         map.setView([data.lat, data.lng], 18, { animate: true });
         follow = true;
@@ -570,7 +474,6 @@ window.focusCar = (name) => {
 
 window.fitAllCars = () => {
     const points = Object.values(carLatestData)
-        .map(d => normalizeCarData(d))
         .filter(d => d && d.lat && d.lng)
         .map(d => [d.lat, d.lng]);
     if(points.length > 0) {
@@ -587,14 +490,14 @@ function renderFleetUI() {
     document.getElementById('fleetCountBadge').innerText = `${fleet.length} Unit${fleet.length === 1 ? '' : 's'}`;
 
     if(fleet.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">Scanning Firebase for active fleet units...</div>`;
+        container.innerHTML = `<div style="text-align:center; padding:15px; opacity:0.5; font-size:10px; font-weight:700;">Scanning 'dispatches' for active vehicles...</div>`;
         return;
     }
 
     fleet.forEach(car => {
-        const data = normalizeCarData(carLatestData[car.name]) || { speed: "0.0", ts: 0 };
+        const data = carLatestData[car.name] || { speed: 0, ts: 0 };
         const carSpd = (parseFloat(data.speed) || 0).toFixed(1);
-        const online = (Date.now() - data.ts) < 30000;
+        const online = (Date.now() - data.ts) < 60000;
         const isSelected = (car.name === selectedCarName);
         
         const card = document.createElement('div');
@@ -610,10 +513,9 @@ function renderFleetUI() {
             <div class="fleet-meta">
                 <div>Velocity: <b>${carSpd} km/h</b></div>
             </div>
-            <div class="grid-3">
+            <div class="grid-2">
                 <button onclick="window.selectCar('${car.name}')" class="${isSelected ? 'btn-green' : 'btn-primary'}" style="padding:6px; font-size:9px;">${isSelected ? 'ACTIVE' : 'SELECT'}</button>
                 <button onclick="window.focusCar('${car.name}')" style="background:var(--saxo-slate); padding:6px; font-size:9px;">FOCUS</button>
-                <button onclick="window.requestRemoveFleetCar('${car.name}')" class="btn-red" style="padding:6px; font-size:9px;">REMOVE</button>
             </div>
         `;
         container.appendChild(card);
@@ -649,37 +551,46 @@ async function updateAreaSpeed(lat, lng) {
     } catch(e) { document.getElementById('areaLimit').innerText = "50.0 km/h"; }
 }
 
-document.getElementById('historyBtn').onclick = () => {
-    const d = document.getElementById('historyDate').value;
-    if(!d || !selectedCarName) return;
-    onValue(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${d}`), (snap) => {
-        const val = snap.val();
-        if(!val) return;
-        historyLayer.clearLayers();
-        const pts = Object.values(val).map(p => normalizeCarData(p)).filter(p => p && p.lat && p.lng).sort((a,b)=>a.ts-b.ts).map(p=>[p.lat, p.lng]);
-        if(pts.length > 1){
-            const poly = L.polyline(pts, {color:'#6c5ce7', weight:4, dashArray:'5,10'}).addTo(historyLayer);
-            map.fitBounds(poly.getBounds(), {padding:[50,50]});
-        }
-    }, {onlyOnce: true});
-};
-window.clearHistoryMap = () => { historyLayer.clearLayers(); };
-
 function initFirebaseSync() {
-    const carsRef = ref(db, `users/${safeEmail}/cars`);
-    onValue(carsRef, (snapshot) => {
-        const allData = snapshot.val();
-        if (!allData) {
+    const dispatchesRef = ref(db, 'dispatches');
+    onValue(dispatchesRef, (snapshot) => {
+        const allDispatches = snapshot.val();
+        if (!allDispatches) {
             fleet = [];
             carLatestData = {};
             renderFleetUI();
             return;
         }
 
-        carLatestData = allData;
-        fleet = Object.keys(allData).map(carName => ({
+        const fleetMap = {};
+        Object.values(allDispatches).forEach(disp => {
+            if (disp && disp.vehicle && disp.last_location) {
+                const vehicleName = disp.vehicle.trim().toUpperCase();
+                const loc = disp.last_location;
+                
+                // Parse timestamp correctly
+                let tsVal = Date.now();
+                if (loc.timestamp) {
+                    tsVal = typeof loc.timestamp === 'number' && loc.timestamp < 10000000000 ? loc.timestamp * 1000 : loc.timestamp;
+                }
+
+                fleetMap[vehicleName] = {
+                    lat: loc.lat,
+                    lng: loc.lng,
+                    speed: loc.speed || 0,
+                    ts: tsVal,
+                    accuracy: loc.accuracy || 0,
+                    subId: disp.subId || disp.uid || "",
+                    geofence: disp.geofence || null,
+                    destination: disp.destination || null
+                };
+            }
+        });
+
+        carLatestData = fleetMap;
+        fleet = Object.keys(carLatestData).map(carName => ({
             name: carName,
-            subId: allData[carName].subId || ""
+            subId: carLatestData[carName].subId
         }));
 
         if (!selectedCarName && fleet.length > 0) {
@@ -690,8 +601,8 @@ function initFirebaseSync() {
 
         renderFleetUI();
 
-        if (selectedCarName && allData[selectedCarName]) {
-            const data = normalizeCarData(allData[selectedCarName]);
+        if (selectedCarName && carLatestData[selectedCarName]) {
+            const data = carLatestData[selectedCarName];
             if (data && data.lat && data.lng) {
                 const pos = [data.lat, data.lng];
                 const spd = (parseFloat(data.speed) || 0).toFixed(1);
@@ -730,7 +641,7 @@ function initFirebaseSync() {
                     if (d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", selectedCarName);
                 }
 
-                const online = (Date.now() - data.ts) < 30000;
+                const online = (Date.now() - data.ts) < 60000;
                 document.getElementById('statusHeader').className = online ? "online" : "offline";
                 document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
@@ -759,9 +670,20 @@ window.searchPlace = () => {
     const q = document.getElementById('search').value;
     if(!selectedCarName) return;
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`).then(r=>r.json()).then(res=>{
-        if(res.length) update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`),{destination:{lat:parseFloat(res[0].lat),lng:parseFloat(res[0].lon)}});
+        if(res.length) {
+            // Find dispatch key associated with selectedCarName to update destination if needed
+            // For now, update local storage destination preview
+            const d = {lat: parseFloat(res[0].lat), lng: parseFloat(res[0].lon)};
+            if(carLatestData[selectedCarName]) carLatestData[selectedCarName].destination = d;
+            const dPos = [d.lat, d.lng];
+            if(!destMarker) destMarker = L.marker(dPos).addTo(map);
+            destMarker.setLatLng(dPos);
+            const currentCarData = carLatestData[selectedCarName];
+            if(currentCarData) drawRoute([currentCarData.lat, currentCarData.lng], dPos);
+        }
     });
 };
+
 async function drawRoute(car,dest){
     const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${car[1]},${car[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`);
     const d = await r.json();
@@ -771,6 +693,7 @@ async function drawRoute(car,dest){
         document.getElementById('etaDist').innerText = Math.round(d.routes[0].duration/60) + "m / " + (d.routes[0].distance/1000).toFixed(1) + "km";
     }
 }
+
 window.secureSpeedSet = () => {
     if(!selectedCarName) return;
     const i = document.getElementById('maxSpeedLimit');
@@ -779,23 +702,24 @@ window.secureSpeedSet = () => {
 };
 window.openSpeedClear = () => { if(selectedCarName) window.openAdminModal("BYPASS", "Unlock?", () => { const i = document.getElementById('maxSpeedLimit'); i.disabled = false; i.value = ""; activeLimit = null; }); };
 window.secureAddFence = () => { 
-    const pos = normalizeCarData(carLatestData[selectedCarName]);
+    const pos = carLatestData[selectedCarName];
     if(selectedCarName && pos) window.openAdminModal("FENCE", `Deploy fence for ${selectedCarName}?`, () => { document.getElementById('fenceModal').style.display='flex'; }); 
 };
 window.confirmFence = () => { 
     if(!selectedCarName) return;
-    const pos = normalizeCarData(carLatestData[selectedCarName]);
-    if(pos && pos.lat && pos.lng) update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {geofence:{lat:pos.lat, lng:pos.lng, radius:parseInt(document.getElementById('fenceInput').value)}}); 
+    const pos = carLatestData[selectedCarName];
+    if(pos && pos.lat && pos.lng) {
+        carLatestData[selectedCarName].geofence = {lat: pos.lat, lng: pos.lng, radius: parseInt(document.getElementById('fenceInput').value)};
+    }
     document.getElementById('fenceModal').style.display='none'; 
 };
-window.clearGeofence = () => { if(selectedCarName) window.openAdminModal("REMOVE", "Kill fence?", () => { update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {geofence:null}); if(fenceCircle) map.removeLayer(fenceCircle); }); };
-window.openSystemReset = () => { if(selectedCarName) window.openAdminModal("PURGE", "Clear data?", () => { set(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {lat:0, lng:0, speed:"0.0", ts:Date.now()}); location.reload(); }); };
+window.clearGeofence = () => { if(selectedCarName) window.openAdminModal("REMOVE", "Kill fence?", () => { if(carLatestData[selectedCarName]) carLatestData[selectedCarName].geofence = null; if(fenceCircle) map.removeLayer(fenceCircle); }); };
 
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
 document.getElementById('followBtn').onclick = function() { follow = !follow; this.innerText = `FOLLOW: ${follow?'ON':'OFF'}`; };
 document.getElementById('lockRouteBtn').onclick = function() {
     routeLocked = !routeLocked; this.innerText = `LOCK: ${routeLocked?'ON':'OFF'}`;
-    const pos = normalizeCarData(carLatestData[selectedCarName]);
+    const pos = carLatestData[selectedCarName];
     if(routeLocked && selectedCarName && pos && pos.lat && pos.lng && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([[pos.lat, pos.lng], destMarker.getLatLng()]), {padding: [70, 70]}); }
 };
 
