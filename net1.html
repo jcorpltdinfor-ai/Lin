@@ -153,7 +153,26 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 .blinking { animation: pulse 0.8s infinite; color: var(--saxo-red) !important; border-color: var(--saxo-red) !important; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-#hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+/* FIXED TOP-RIGHT FLOATING MENU BUTTON */
+#hoverBtn { 
+    position: fixed; 
+    top: 15px; 
+    right: 15px; 
+    width: 50px; 
+    height: 50px; 
+    border-radius: 50%; 
+    background: var(--saxo-navy); 
+    color: #fff; 
+    text-align: center; 
+    line-height: 50px; 
+    font-size: 26px; 
+    cursor: pointer; 
+    z-index: 10002; 
+    border: 2px solid var(--saxo-blue); 
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4); 
+    backdrop-filter: blur(5px);
+}
+
 #logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: #666; border: 1px inset rgba(0,0,0,0.05); }
 
 /* --- MODERN UNIFIED CALENDAR WIDGET --- */
@@ -266,7 +285,7 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 </div>
 
 <div id="map"></div>
-<div id="hoverBtn">≡</div>
+<div id="hoverBtn" title="Toggle Menu">≡</div>
 <div id="speedHud">0.0 KM/H</div>
 
 <!-- DEAD ZONE OVERLAY -->
