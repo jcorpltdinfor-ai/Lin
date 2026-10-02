@@ -326,7 +326,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="control-group" style="margin-bottom:10px;">
     <span class="control-label">Register New Vehicle</span>
     <input type="text" id="newCarName" placeholder="Number Plate" style="margin-bottom:6px; font-size:11px; text-transform: uppercase;">
-    <input type="text" id="newCarSubId" placeholder="Car ID / Sub " style="margin-bottom:8px; font-size:10px;">
+    <input type="text" id="newCarSubId" placeholder="Car ID / Sub ID" style="margin-bottom:8px; font-size:10px;">
     <button onclick="window.requestAddFleetVehicle()" class="btn-primary" style="font-size:11px; padding:11px; box-shadow: 0 4px 12px rgba(0,163,224,0.2);">+ REGISTER VEHICLE</button>
   </div>
 
@@ -467,7 +467,7 @@ window.confirmLogout = () => {
     toast.classList.add('show');
     setTimeout(() => {
         localStorage.clear();
-        window.location.href = 'admin.html';
+        window.location.href = 'admin2.html';
     }, 1200);
 };
 
