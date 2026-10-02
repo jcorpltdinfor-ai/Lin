@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Master Tracker Pro | Signal Turbo V5.2 (Fleet Edition)</title>
+<title>Master Tracker Pro | Signal Turbo V5.3 (Fleet Edition)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
+<!-- Turf.js for Spatial Geofence Buffering -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.3.0/turf.min.js"></script>
 
 <!-- OneSignal SDK -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -144,7 +146,7 @@ input, select {
     font-size:12px; font-weight: 700; background: var(--input-bg); 
     color: var(--input-text) !important; outline: none; transition: 0.2s;
 }
-input:focus { border-color: var(--saxo-blue); box-shadow: 0 0 0 3px rgba(0,163,224,0.15); }
+input:focus, select:focus { border-color: var(--saxo-blue); box-shadow: 0 0 0 3px rgba(0,163,224,0.15); }
 input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
 #speedHud { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
@@ -153,6 +155,18 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
 #hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 #logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: #666; border: 1px inset rgba(0,0,0,0.05); }
+
+/* --- MODERN UNIFIED CALENDAR WIDGET --- */
+.calendar-widget { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 8px; margin-bottom: 6px; display: none; }
+.calendar-header { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.calendar-header select { padding: 5px; font-size: 10.5px; height: 30px; font-weight: 700; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.calendar-day-name { font-size: 8px; font-weight: 800; opacity: 0.6; padding: 2px 0; color: var(--saxo-navy); }
+.calendar-day { font-size: 9.5px; font-weight: 700; padding: 6px 0; border-radius: 4px; cursor: pointer; background: transparent; color: #000000; transition: 0.2s; }
+.calendar-day:hover { background: rgba(0,163,224,0.15); }
+.calendar-day.empty { background: transparent; cursor: default; }
+.calendar-day.has-travel { background: #6c5ce7; color: #ffffff; font-weight: 800; box-shadow: 0 2px 6px rgba(108,92,231,0.4); }
+.calendar-day.selected { background: #00c07d !important; color: #ffffff !important; box-shadow: 0 0 8px rgba(0,192,125,0.5); }
 
 /* --- MODERN FLEET CARD UI --- */
 .fleet-card { 
@@ -315,9 +329,48 @@ input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
     <button onclick="window.clearGeofence()" style="background:#444">CLR FENCE</button>
   </div>
 
+  <!-- ROUTE CORRIDOR FENCE MODULE (PROTECTED BY NAKURU1) -->
   <div class="control-group" style="margin-bottom:8px;">
-    <span class="control-label">History Archive (Selected Car)</span>
-    <input type="date" id="historyDate" style="margin-bottom:5px;">
+    <span class="control-label">Route Corridor Fence</span>
+    <button id="routeFenceBtn" onclick="window.requestToggleRouteGeofence()" class="btn-primary">ROUTE FENCE: OFF</button>
+  </div>
+
+  <!-- UNIFIED COLLAPSIBLE & INSTANT-JUMP CALENDAR MODULE -->
+  <div class="control-group" style="margin-bottom:8px;" id="calendarControlGroup">
+    <span class="control-label" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="window.toggleCalendarCollapse()">
+        <span>History Archive (Selected Car)</span>
+        <span id="calendarToggleIcon">▶</span>
+    </span>
+
+    <div id="calendarWidgetContainer" class="calendar-widget">
+        <!-- Modern Dropdown Jump Header -->
+        <div class="calendar-header">
+            <select id="calMonthSelect" onchange="window.onCalendarDropdownChange()">
+                <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+                <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+                <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+                <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+            </select>
+            <select id="calYearSelect" onchange="window.onCalendarDropdownChange()" style="flex: 0.8;">
+                <!-- Dynamically populated year options -->
+            </select>
+        </div>
+        <div class="calendar-grid">
+            <div class="calendar-day-name">Su</div>
+            <div class="calendar-day-name">Mo</div>
+            <div class="calendar-day-name">Tu</div>
+            <div class="calendar-day-name">We</div>
+            <div class="calendar-day-name">Th</div>
+            <div class="calendar-day-name">Fr</div>
+            <div class="calendar-day-name">Sa</div>
+        </div>
+        <div id="calendarDaysGrid" class="calendar-grid" style="margin-top:3px;">
+            <!-- Dynamically generated days -->
+        </div>
+    </div>
+    <div style="font-size: 8.5px; opacity: 0.8; margin: 6px 0; text-align: center;">
+        Selected Date: <b id="selectedDateDisplay" style="color:#6c5ce7;">None</b>
+    </div>
     <div class="grid-2">
         <button id="historyBtn" class="btn-purple">RENDER</button>
         <button onclick="window.clearHistoryMap()" style="background:#444">CLEAR</button>
@@ -373,19 +426,28 @@ const currentUserEmail = (
   'default_user'
 ).trim().toLowerCase();
 
-// Safe Firebase path sanitizing for email addresses
 const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
-
-// Display session user badge in UI
 document.getElementById('sessionUserBadge').innerText = currentUserEmail;
 
-// Scoped LocalStorage keys per user email for complete multi-account isolation
 const STORAGE_FLEET_KEY = `ag_fleet_vehicles_${safeEmail}`;
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
 const STORAGE_ACTIVE_UID_KEY = `ag_active_uid_${safeEmail}`;
 
 let fleet = JSON.parse(localStorage.getItem(STORAGE_FLEET_KEY) || '[]');
 let selectedCarName = localStorage.getItem(STORAGE_SELECTED_KEY) || (fleet[0] ? fleet[0].name : "");
+
+// Calendar state variables (collapsed by default on launch)
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedHistoryDate = "";
+let recordedTravelDates = new Set();
+let calendarCollapsed = true;
+
+// Route Geofence state variables
+let routeGeofenceActive = false;
+let routeFenceLayer = null;
+let isRouteBreached = false;
+let currentRouteCoordinates = null;
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
@@ -455,7 +517,7 @@ window.sendPush = (msg, targetName = selectedCarName) => {
     }
 };
 
-// --- NATIVE GEOLOCATION TRANSMISSION (LOCAL TIMEZONE ALIGNED HISTORY) ---
+// --- NATIVE GEOLOCATION TRANSMISSION ---
 if ("geolocation" in navigator) {
     navigator.geolocation.watchPosition(
         (p) => {
@@ -493,7 +555,181 @@ window.openAdminModal = (t, d, cb) => {
 };
 window.closeAdmin = () => { document.getElementById('adminModal').style.display='none'; document.getElementById('adminPass').value=''; };
 
-// --- FLEET REGISTRATION (SCOPED TO ISOLATED USER) ---
+// --- ROUTE GEOFENCE CORRIDOR ENGINE (PROTECTED BY NAKURU1) ---
+window.requestToggleRouteGeofence = () => {
+    const nextState = !routeGeofenceActive;
+    window.openAdminModal("SECURITY CLEARANCE", `Enter password to ${nextState ? 'enable' : 'disable'} Route Geofence`, () => {
+        routeGeofenceActive = nextState;
+        const btn = document.getElementById('routeFenceBtn');
+        btn.innerText = `ROUTE FENCE: ${routeGeofenceActive ? 'ON' : 'OFF'}`;
+        btn.className = routeGeofenceActive ? 'btn-green' : 'btn-primary';
+        
+        if (routeGeofenceActive && currentRouteCoordinates) {
+            createRouteFence(currentRouteCoordinates);
+        } else {
+            if (routeFenceLayer) {
+                map.removeLayer(routeFenceLayer);
+                routeFenceLayer = null;
+            }
+            isRouteBreached = false;
+        }
+    });
+};
+
+function createRouteFence(coords) {
+    if (routeFenceLayer) map.removeLayer(routeFenceLayer);
+    if (!coords || coords.length < 2) return;
+    
+    const lineGeoJSON = turf.lineString(coords.map(c => [c[1], c[0]]));
+    const bufferedPolygon = turf.buffer(lineGeoJSON, 0.15, { units: 'kilometers' }); // 150m buffer corridor
+    
+    routeFenceLayer = L.geoJSON(bufferedPolygon, {
+        style: {
+            color: isRouteBreached ? '#ff5a5f' : '#00c07d',
+            weight: 2,
+            fillColor: isRouteBreached ? '#ff5a5f' : '#00c07d',
+            fillOpacity: 0.15
+        }
+    }).addTo(map);
+}
+
+function checkRouteGeofence(carLat, carLng) {
+    if (!routeGeofenceActive || !routeFenceLayer) return;
+
+    const carPoint = turf.point([carLng, carLat]);
+    const layerGeoJson = routeFenceLayer.toGeoJSON();
+    if (!layerGeoJson || !layerGeoJson.features || layerGeoJson.features.length === 0) return;
+    const polygonGeoJSON = layerGeoJson.features[0];
+    
+    const inside = turf.booleanPointInPolygon(carPoint, polygonGeoJSON);
+
+    if (!inside && !isRouteBreached) {
+        isRouteBreached = true;
+        updateRouteFenceStyle();
+        window.sendPush("ROUTE DEVIATION BREACH", selectedCarName);
+    } else if (inside && isRouteBreached) {
+        isRouteBreached = false;
+        updateRouteFenceStyle();
+    }
+}
+
+function updateRouteFenceStyle() {
+    if (routeFenceLayer) {
+        routeFenceLayer.setStyle({
+            color: isRouteBreached ? '#ff5a5f' : '#00c07d',
+            fillColor: isRouteBreached ? '#ff5a5f' : '#00c07d'
+        });
+    }
+}
+
+// --- UNIFIED CALENDAR ENGINE ---
+window.toggleCalendarCollapse = () => {
+    calendarCollapsed = !calendarCollapsed;
+    const widget = document.getElementById('calendarWidgetContainer');
+    const icon = document.getElementById('calendarToggleIcon');
+    if (calendarCollapsed) {
+        widget.style.display = 'none';
+        icon.innerText = '▶';
+    } else {
+        widget.style.display = 'block';
+        icon.innerText = '▼';
+        populateYearDropdown();
+        renderCalendarGrid();
+    }
+};
+
+// AUTO-COLLAPSE WHEN CLICKING OUTSIDE CALENDAR
+document.addEventListener('click', (e) => {
+    if (!calendarCollapsed) {
+        const groupEl = document.getElementById('calendarControlGroup');
+        if (groupEl && !groupEl.contains(e.target)) {
+            window.toggleCalendarCollapse();
+        }
+    }
+});
+
+function populateYearDropdown() {
+    const yearSelect = document.getElementById('calYearSelect');
+    if (yearSelect.children.length > 0) return;
+    const currentY = new Date().getFullYear();
+    yearSelect.innerHTML = "";
+    for (let y = currentY; y >= currentY - 5; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.innerText = y;
+        if (y === calYear) opt.selected = true;
+        yearSelect.appendChild(opt);
+    }
+}
+
+window.onCalendarDropdownChange = () => {
+    calMonth = parseInt(document.getElementById('calMonthSelect').value);
+    calYear = parseInt(document.getElementById('calYearSelect').value);
+    renderCalendarGrid();
+};
+
+function renderCalendarGrid() {
+    document.getElementById('calMonthSelect').value = calMonth;
+    document.getElementById('calYearSelect').value = calYear;
+    
+    const gridEl = document.getElementById('calendarDaysGrid');
+    gridEl.innerHTML = "";
+
+    const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
+    const totalDays = new Date(calYear, calMonth + 1, 0).getDate();
+
+    for (let i = 0; i < firstDayIndex; i++) {
+        const blank = document.createElement('div');
+        blank.className = "calendar-day empty";
+        gridEl.appendChild(blank);
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+        const mStr = String(calMonth + 1).padStart(2, '0');
+        const dStr = String(day).padStart(2, '0');
+        const dateStr = `${calYear}-${mStr}-${dStr}`;
+
+        const dayEl = document.createElement('div');
+        dayEl.className = "calendar-day";
+        if (recordedTravelDates.has(dateStr)) {
+            dayEl.classList.add("has-travel");
+            dayEl.title = `Travel recorded on ${dateStr}`;
+        }
+        if (dateStr === selectedHistoryDate) {
+            dayEl.classList.add("selected");
+        }
+        dayEl.innerText = day;
+        dayEl.onclick = (e) => {
+            e.stopPropagation(); // Prevent click-outside listener from instantly collapsing
+            selectedHistoryDate = dateStr;
+            document.getElementById('selectedDateDisplay').innerText = dateStr;
+            renderCalendarGrid();
+        };
+        gridEl.appendChild(dayEl);
+    }
+}
+
+function fetchAvailableHistoryDates(carName) {
+    recordedTravelDates.clear();
+    selectedHistoryDate = "";
+    document.getElementById('selectedDateDisplay').innerText = "None";
+
+    if (!carName) {
+        renderCalendarGrid();
+        return;
+    }
+
+    onValue(ref(db, `users/${safeEmail}/cars/${carName}/history`), (snapshot) => {
+        recordedTravelDates.clear();
+        const val = snapshot.val();
+        if (val) {
+            Object.keys(val).forEach(dateStr => recordedTravelDates.add(dateStr));
+        }
+        renderCalendarGrid();
+    }, { onlyOnce: true });
+}
+
+// --- FLEET REGISTRATION ---
 window.requestAddFleetVehicle = () => {
     const name = document.getElementById('newCarName').value.trim().toUpperCase();
     const subId = document.getElementById('newCarSubId').value.trim();
@@ -555,6 +791,7 @@ window.requestRemoveFleetCar = (name) => {
             localStorage.removeItem(STORAGE_SELECTED_KEY);
             localStorage.removeItem(STORAGE_ACTIVE_UID_KEY);
             renderFleetUI();
+            fetchAvailableHistoryDates("");
         } else {
             renderFleetUI();
         }
@@ -572,7 +809,14 @@ window.selectCar = (name) => {
     if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
     if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
     if(fenceCircle) { map.removeLayer(fenceCircle); fenceCircle = null; }
+    if(routeFenceLayer) { map.removeLayer(routeFenceLayer); routeFenceLayer = null; }
     historyLayer.clearLayers();
+
+    currentRouteCoordinates = null;
+    routeGeofenceActive = false;
+    isRouteBreached = false;
+    document.getElementById('routeFenceBtn').innerText = "ROUTE FENCE: OFF";
+    document.getElementById('routeFenceBtn').className = "btn-primary";
 
     document.getElementById('spdVal').innerText = "0.0 km/h";
     document.getElementById('speedHud').innerText = "0.0 KM/H";
@@ -588,6 +832,8 @@ window.selectCar = (name) => {
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
+    fetchAvailableHistoryDates(name);
+
     const data = carLatestData[name];
     if(data && data.lat && data.lng) {
         const pos = [data.lat, data.lng];
@@ -715,10 +961,9 @@ async function updateAreaSpeed(lat, lng) {
     } catch(e) { document.getElementById('areaLimit').innerText = "50.0 km/h"; }
 }
 
-// --- SECURE & ROBUST HISTORY RENDERER ---
+// --- HISTORY RENDERER ---
 document.getElementById('historyBtn').onclick = () => {
-    const d = document.getElementById('historyDate').value;
-    if(!d) {
+    if(!selectedHistoryDate) {
         window.showAlertModal("HISTORY ERROR", "Please select a date from the calendar first.");
         return;
     }
@@ -726,10 +971,10 @@ document.getElementById('historyBtn').onclick = () => {
         window.showAlertModal("HISTORY ERROR", "Please select an active target vehicle first.");
         return;
     }
-    onValue(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${d}`), (snap) => {
+    onValue(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${selectedHistoryDate}`), (snap) => {
         const val = snap.val();
         if(!val) {
-            window.showAlertModal("NO HISTORY FOUND", `No tracking route recorded for (${selectedCarName}) on date: ${d}.`);
+            window.showAlertModal("NO HISTORY FOUND", `No tracking route recorded for (${selectedCarName}) on date: ${selectedHistoryDate}.`);
             return;
         }
         historyLayer.clearLayers();
@@ -737,15 +982,21 @@ document.getElementById('historyBtn').onclick = () => {
         if(pts.length > 1){
             const poly = L.polyline(pts, {color:'#6c5ce7', weight:4, dashArray:'5,10'}).addTo(historyLayer);
             map.fitBounds(poly.getBounds(), {padding:[50,50]});
-            window.showAlertModal("HISTORY RENDERED", `Successfully loaded ${pts.length} route coordinates for ${d}.`);
+            window.showAlertModal("HISTORY RENDERED", `Successfully loaded ${pts.length} route coordinates for ${selectedHistoryDate}.`);
         } else {
-            window.showAlertModal("INSUFFICIENT DATA", `Not enough route points recorded on ${d} to render a path.`);
+            window.showAlertModal("INSUFFICIENT DATA", `Not enough route points recorded on ${selectedHistoryDate} to render a path.`);
         }
     }, {onlyOnce: true});
 };
-window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
-// --- BACKGROUND ISOLATED LISTENERS FOR USER'S FLEET ---
+window.clearHistoryMap = () => { 
+    historyLayer.clearLayers(); 
+    selectedHistoryDate = "";
+    document.getElementById('selectedDateDisplay').innerText = "None";
+    renderCalendarGrid();
+};
+
+// --- BACKGROUND LISTENERS ---
 function syncFleetListeners() {
     fleet.forEach(car => {
         if (!carListeners[car.name]) {
@@ -793,6 +1044,9 @@ function syncFleetListeners() {
                         if(d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", car.name);
                     }
 
+                    // Check Route Geofence Corridor
+                    checkRouteGeofence(pos[0], pos[1]);
+
                     const online = (Date.now() - data.ts) < 15000;
                     document.getElementById('statusHeader').className = online ? "online" : "offline";
                     document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
@@ -833,8 +1087,13 @@ async function drawRoute(car,dest){
     const d = await r.json();
     if(d.routes && d.routes[0]){
         if(routeLine) map.removeLayer(routeLine);
-        routeLine = L.polyline(d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]),{color:'#00a3e0',weight:5}).addTo(map);
+        currentRouteCoordinates = d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+        routeLine = L.polyline(currentRouteCoordinates, {color:'#00a3e0',weight:5}).addTo(map);
         document.getElementById('etaDist').innerText = Math.round(d.routes[0].duration/60) + "m / " + (d.routes[0].distance/1000).toFixed(1) + "km";
+        
+        if (routeGeofenceActive) {
+            createRouteFence(currentRouteCoordinates);
+        }
     }
 }
 window.secureSpeedSet = () => {
@@ -861,7 +1120,7 @@ document.getElementById('lockRouteBtn').onclick = function() {
     if(routeLocked && selectedCarName && carLatestData[selectedCarName] && destMarker) { follow = false; document.getElementById('followBtn').innerText = "FOLLOW: OFF"; map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]}); }
 };
 
-// --- DYNAMIC NETWORK STATUS LISTENER ---
+// --- NETWORK STATUS LISTENER ---
 const deadZoneEl = document.getElementById('deadZone');
 
 function updateNetworkStatus() {
@@ -902,8 +1161,14 @@ if (!navigator.onLine) {
 
 syncFleetListeners();
 renderFleetUI();
-if(selectedCarName && carLatestData[selectedCarName]) {
-    map.setView([carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], 18);
+populateYearDropdown();
+renderCalendarGrid();
+
+if(selectedCarName) {
+    fetchAvailableHistoryDates(selectedCarName);
+    if(carLatestData[selectedCarName]) {
+        map.setView([carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], 18);
+    }
 }
 </script>
 </body>
