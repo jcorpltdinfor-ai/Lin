@@ -245,6 +245,11 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     border: 0;
     background: #070d16;
     display: block;
+    transition: opacity 0.2s ease;
+}
+#streetViewFrame.offline-hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 #streetViewLoading {
     position: absolute;
@@ -255,10 +260,26 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     font-weight: 800;
     letter-spacing: 1px;
     display: flex;
+    flex-direction: column;
+    gap: 10px;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    padding: 20px;
     z-index: 3;
     pointer-events: none;
+}
+#streetViewLoading.interactive {
+    pointer-events: auto;
+}
+#streetViewRetryBtn {
+    width: auto;
+    padding: 6px 14px;
+    font-size: 10px;
+    border-radius: 999px;
+    background: var(--saxo-blue);
+    color: #ffffff;
+    display: none;
 }
 
 #map { height:100%; z-index:1; filter:var(--map-filter); transition: filter 0.35s ease; background:#1a1a1a; }
@@ -408,7 +429,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
     <div id="streetViewViewport">
         <div id="streetViewLinkBlocker" aria-hidden="true"></div>
-        <div id="streetViewLoading">LOADING STREET VIEW...</div>
+        <div id="streetViewLoading">
+            <span id="streetViewStatusText">LOADING STREET VIEW...</span>
+            <button id="streetViewRetryBtn" type="button" onclick="window.openStreetView()">↻ RETRY</button>
+        </div>
         <iframe id="streetViewFrame" loading="eager" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
     </div>
 </div>
@@ -725,6 +749,10 @@ function updateNetworkUI() {
     if (isOffline) {
         document.getElementById('statusHeader').className = "offline";
         document.getElementById('statusHeader').innerText = "SIGNAL: LOST";
+        const svModal = document.getElementById('streetViewModal');
+        if (svModal && svModal.style.display === 'flex') {
+            showStreetViewOfflineState();
+        }
     }
 }
 
@@ -1067,6 +1095,25 @@ window.fitAllCars = () => {
 
 let streetViewTimeout = null;
 
+function showStreetViewOfflineState() {
+    if (streetViewTimeout) {
+        clearTimeout(streetViewTimeout);
+        streetViewTimeout = null;
+    }
+    const frame = document.getElementById('streetViewFrame');
+    const loader = document.getElementById('streetViewLoading');
+    const statusText = document.getElementById('streetViewStatusText');
+    const retryBtn = document.getElementById('streetViewRetryBtn');
+    frame.onload = null;
+    frame.onerror = null;
+    frame.classList.add('offline-hidden');
+    frame.src = 'about:blank';
+    loader.style.display = 'flex';
+    loader.classList.add('interactive');
+    statusText.innerText = 'NO INTERNET CONNECTION — STREET VIEW UNAVAILABLE';
+    retryBtn.style.display = 'inline-block';
+}
+
 window.openStreetView = () => {
     if (!selectedCarName || !carLatestData[selectedCarName]) {
         window.showAlertModal("NO VEHICLE SELECTED", "Select a vehicle with live GPS coordinates first.");
@@ -1078,25 +1125,48 @@ window.openStreetView = () => {
         return;
     }
 
+    if (!navigator.onLine) {
+        window.showAlertModal("NO INTERNET CONNECTION", "Turn on internet access to load Street View.");
+        return;
+    }
+
     if (streetViewTimeout) clearTimeout(streetViewTimeout);
 
     const frame = document.getElementById('streetViewFrame');
     const loader = document.getElementById('streetViewLoading');
+    const statusText = document.getElementById('streetViewStatusText');
+    const retryBtn = document.getElementById('streetViewRetryBtn');
     const embedUrl = `https://www.google.com/maps?layer=c&cbll=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&cbp=11,0,8,0,0&output=svembed`;
 
     document.getElementById('streetViewTitle').innerText = `STREET VIEW · ${selectedCarName}`;
+    frame.classList.remove('offline-hidden');
     loader.style.display = 'flex';
-    loader.innerText = 'LOADING STREET VIEW...';
+    loader.classList.remove('interactive');
+    statusText.innerText = 'LOADING STREET VIEW...';
+    retryBtn.style.display = 'none';
     document.getElementById('streetViewModal').style.display = 'flex';
 
+    frame.onerror = () => {
+        showStreetViewOfflineState();
+    };
+
     frame.onload = () => {
+        if (!navigator.onLine) {
+            showStreetViewOfflineState();
+            return;
+        }
         if (streetViewTimeout) clearTimeout(streetViewTimeout);
         loader.style.display = 'none';
+        retryBtn.style.display = 'none';
     };
 
     streetViewTimeout = setTimeout(() => {
-        loader.style.display = 'none';
-    }, 5000);
+        if (!navigator.onLine) {
+            showStreetViewOfflineState();
+        } else {
+            loader.style.display = 'none';
+        }
+    }, 6000);
 
     requestAnimationFrame(() => {
         frame.src = embedUrl;
@@ -1109,9 +1179,15 @@ window.closeStreetView = () => {
         streetViewTimeout = null;
     }
     const frame = document.getElementById('streetViewFrame');
+    const loader = document.getElementById('streetViewLoading');
+    const retryBtn = document.getElementById('streetViewRetryBtn');
     frame.onload = null;
+    frame.onerror = null;
+    frame.classList.remove('offline-hidden');
     frame.src = 'about:blank';
-    document.getElementById('streetViewLoading').style.display = 'none';
+    loader.style.display = 'none';
+    loader.classList.remove('interactive');
+    retryBtn.style.display = 'none';
     document.getElementById('streetViewModal').style.display = 'none';
 };
 
