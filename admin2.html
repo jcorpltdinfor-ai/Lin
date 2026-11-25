@@ -976,7 +976,13 @@ window.openStreetView = () => {
         return;
     }
     const panoUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
-    window.location.href = panoUrl;
+
+    if (window.AppInventor && typeof window.AppInventor.setWebViewString === "function") {
+        window.AppInventor.setWebViewString("PANO_URL:" + panoUrl);
+        return;
+    }
+
+    window.open(panoUrl, "_blank", "noopener,noreferrer");
 };
 
 function renderFleetUI() {
