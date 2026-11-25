@@ -35,9 +35,33 @@
 :root { 
     --saxo-navy: #001e3c; --saxo-blue: #00a3e0; --saxo-slate: #1c2b39;
     --saxo-green: #00c07d; --saxo-red: #ff5a5f; --saxo-orange: #fd7e14;
-    --map-bright: 100%; --panel-bg: rgba(255,255,255,0.96); --panel-text: #1c2b39;
+    --map-filter: brightness(100%);
+    --panel-bg: rgba(255,255,255,0.96); --panel-text: #1c2b39;
+    --panel-border: rgba(0,0,0,0.06); --surface-subtle: rgba(0,0,0,0.03);
+    --surface-group: rgba(0,0,0,0.04); --divider-color: #eeeeee;
     --input-bg: #ffffff; --input-text: #000000; --input-border: #cccccc;
+    --card-text: #001e3c; --card-bg: linear-gradient(135deg, rgba(28, 43, 57, 0.03), rgba(0, 30, 60, 0.06));
 }
+
+body.theme-system-dark {
+    --map-filter: invert(92%) hue-rotate(180deg) brightness(88%) contrast(105%);
+    --panel-bg: rgba(15, 23, 42, 0.96);
+    --panel-text: #f1f5f9;
+    --panel-border: rgba(255, 255, 255, 0.12);
+    --surface-subtle: rgba(255, 255, 255, 0.05);
+    --surface-group: rgba(255, 255, 255, 0.06);
+    --divider-color: rgba(255, 255, 255, 0.12);
+    --input-bg: #1e293b;
+    --input-text: #f8fafc;
+    --input-border: #334155;
+    --card-text: #e2e8f0;
+    --card-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+}
+
+body.theme-system-dark.satellite-active {
+    --map-filter: brightness(68%) contrast(112%) saturate(90%);
+}
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111;overflow:hidden;}
 
@@ -152,13 +176,13 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-#map { height:100%; z-index:1; filter:brightness(var(--map-bright)); transition: 0.4s; background:#1a1a1a; }
+#map { height:100%; z-index:1; filter:var(--map-filter); transition: filter 0.35s ease; background:#1a1a1a; }
 
 #panel {
     position:absolute; top:10px; left:10px; background: var(--panel-bg); color: var(--panel-text); 
     padding:15px; font-size:12px; border-radius:16px; z-index:1000; width:320px;
     max-height:94vh; overflow-y:auto; box-shadow:0 12px 45px rgba(0,0,0,0.45); 
-    transition: transform 0.3s ease-out;
+    transition: transform 0.3s ease-out, background 0.25s ease, color 0.25s ease;
     scrollbar-width: thin; scrollbar-color: var(--saxo-blue) transparent;
 }
 #panel::-webkit-scrollbar { width: 4px; }
@@ -173,13 +197,15 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 .online { background: var(--saxo-green); box-shadow: 0 0 15px rgba(0,192,125,0.4); }
 .offline { background: var(--saxo-red); }
 
-.stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--panel-border); }
 .stat-row b { color: var(--saxo-blue); }
+
+.panel-divider { border: 0; border-top: 1px solid var(--divider-color); margin: 12px 0; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .grid-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 4px; margin-bottom: 0; }
 
-.control-group { background: rgba(0,0,0,0.04); padding: 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.06); }
+.control-group { background: var(--surface-group); padding: 10px; border-radius: 10px; border: 1px solid var(--panel-border); }
 .control-label { font-size: 8.5px; font-weight: 800; color: var(--saxo-blue); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
 
 button { padding:10px; font-size:11px; width:100%; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:var(--saxo-slate); color:#fff; transition: 0.2s; }
@@ -214,35 +240,47 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
 #hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-#logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: #666; border: 1px inset rgba(0,0,0,0.05); }
+#logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: var(--surface-subtle); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: var(--panel-text); opacity: 0.75; border: 1px inset var(--panel-border); }
 
 .fleet-card { 
-    background: linear-gradient(135deg, rgba(28, 43, 57, 0.03), rgba(0, 30, 60, 0.06)); 
-    border: 1px solid rgba(0, 163, 224, 0.2); 
+    background: var(--card-bg); 
+    border: 1px solid rgba(0, 163, 224, 0.25); 
     border-radius: 10px; 
     padding: 10px 12px; 
     margin-bottom: 8px; 
     font-size: 11px; 
     transition: all 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 .fleet-card:hover {
     border-color: var(--saxo-blue);
-    box-shadow: 0 4px 12px rgba(0,163,224,0.1);
+    box-shadow: 0 4px 12px rgba(0,163,224,0.12);
 }
 .fleet-card.active-target { 
     border: 1.5px solid var(--saxo-green); 
-    background: linear-gradient(135deg, rgba(0,192,125,0.06), rgba(0,30,60,0.04));
-    box-shadow: 0 0 15px rgba(0,192,125,0.12); 
+    background: linear-gradient(135deg, rgba(0,192,125,0.12), rgba(0,30,60,0.06));
+    box-shadow: 0 0 15px rgba(0,192,125,0.14); 
 }
 .fleet-card-header { 
     display: flex; 
     justify-content: space-between; 
     align-items: center;
     font-weight: 800; 
-    color: var(--saxo-navy); 
+    color: var(--card-text); 
     margin-bottom: 6px; 
     font-size: 12px;
+}
+.fleet-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    font-size: 10px;
+    margin-bottom: 8px;
+    color: var(--panel-text);
+    opacity: 0.88;
+    background: var(--surface-subtle);
+    padding: 6px 8px;
+    border-radius: 6px;
 }
 .status-pill {
     display: inline-flex;
@@ -253,7 +291,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     padding: 2px 8px;
     border-radius: 12px;
 }
-.status-pill.live { background: rgba(0,192,125,0.15); color: #008752; }
+.status-pill.live { background: rgba(0,192,125,0.15); color: #00a86b; }
 .status-pill.offline { background: rgba(255,90,95,0.15); color: var(--saxo-red); }
 .status-dot-mini { width: 6px; height: 6px; border-radius: 50%; }
 .live .status-dot-mini { background: var(--saxo-green); box-shadow: 0 0 6px var(--saxo-green); }
@@ -372,9 +410,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <div id="deadZone">POWERED BY— ASSETGUARD PRO</div>
 
 <div id="panel">
-  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.03); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 12px;">
-      <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;" id="sessionUserBadge">SESSION: ...</div>
-      <div style="display: flex; gap: 4px; align-items: center;">
+  <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 6px 8px; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 8px; gap: 6px;">
+      <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">SESSION: ...</div>
+      <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
+          <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 5px 7px; font-size: 9.5px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
+              ↻ Refresh
+          </button>
           <button onclick="window.openSettingsModal()" title="Internal Security Settings" style="width: auto; padding: 5px 7px; font-size: 9.5px; font-weight: 700; background: rgba(0,163,224,0.12); color: var(--saxo-blue); border: 1px solid rgba(0,163,224,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
@@ -385,6 +426,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       </div>
   </div>
 
+  <div style="margin-bottom: 10px;">
+      <button id="themeToggleBtn" onclick="window.toggleThemeMode()" style="background: var(--saxo-navy); border: 1px solid var(--saxo-blue); padding: 7px 10px; font-size: 10px; letter-spacing: 0.5px;">THEME: BRIGHT</button>
+  </div>
+
   <div id="statusHeader" class="offline">FLEET: STANDBY</div>
   
   <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
@@ -393,7 +438,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="stat-row"><span>Area Speed:</span> <b id="areaLimit" style="color:var(--saxo-red)">-- km/h</b></div>
   <div class="stat-row"><span>Route ETA:</span> <b id="etaDist">-- / --</b></div>
 
-  <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
+  <hr class="panel-divider">
 
   <div class="control-group" style="margin-bottom:10px;">
     <span class="control-label">Register New Vehicle</span>
@@ -463,7 +508,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <button id="lockRouteBtn" class="btn-orange">LOCK: OFF</button>
   </div>
   
-  <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
+  <hr class="panel-divider">
   
   <input id="search" placeholder="Search Destination..." style="margin-bottom:5px;">
   <div class="grid-2" style="margin-bottom:5px;">
@@ -501,6 +546,46 @@ const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
 document.getElementById('sessionUserBadge').innerText = currentUserEmail;
 
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
+const STORAGE_THEME_KEY = `ag_theme_mode_${safeEmail}`;
+
+let currentMapLayerKey = 'googleTraffic';
+
+// --- THEME TOGGLE (BRIGHT vs SYSTEM) ---
+const systemDarkMedia = window.matchMedia('(prefers-color-scheme: dark)');
+let themeMode = localStorage.getItem(STORAGE_THEME_KEY) === 'system' ? 'system' : 'bright';
+
+function applyThemeMode() {
+    const useDark = themeMode === 'system' && systemDarkMedia.matches;
+    document.body.classList.toggle('theme-system-dark', useDark);
+    document.body.classList.toggle('satellite-active', currentMapLayerKey === 'googleSat' || currentMapLayerKey === 'esriWorld');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) {
+        btn.innerText = themeMode === 'system'
+            ? `THEME: SYSTEM (${useDark ? 'DARK' : 'LIGHT'})`
+            : 'THEME: BRIGHT';
+        btn.style.background = themeMode === 'system' ? 'var(--saxo-blue)' : 'var(--saxo-navy)';
+    }
+}
+
+window.toggleThemeMode = () => {
+    themeMode = themeMode === 'bright' ? 'system' : 'bright';
+    localStorage.setItem(STORAGE_THEME_KEY, themeMode);
+    applyThemeMode();
+    window.sendPush(themeMode === 'system' ? "SYSTEM THEME ENABLED" : "BRIGHT THEME ENABLED", selectedCarName || "SYSTEM", true);
+};
+
+systemDarkMedia.addEventListener('change', () => {
+    if (themeMode === 'system') applyThemeMode();
+});
+applyThemeMode();
+
+// --- APP REFRESH BUTTON ---
+window.refreshApp = () => {
+    const toast = document.getElementById('statusToast');
+    toast.innerText = "REFRESHING APP...";
+    toast.classList.add('show');
+    window.location.reload();
+};
 
 let fleet = [];
 let carLatestData = {};
@@ -905,7 +990,7 @@ function renderFleetUI() {
                     <span>${online ? 'ONLINE' : 'OFFLINE'}</span>
                 </div>
             </div>
-            <div class="fleet-meta" style="display: grid; grid-template-columns: 1fr; gap: 4px; font-size: 10px; margin-bottom: 8px; opacity: 0.85; background: rgba(0,0,0,0.03); padding: 6px 8px; border-radius: 6px;">
+            <div class="fleet-meta">
                 <div>Velocity: <b>${carSpd} km/h</b></div>
             </div>
             <div class="grid-3">
@@ -1094,7 +1179,12 @@ function initFirebaseSync() {
     });
 }
 
-window.switchMap = v => { Object.values(layers).forEach(l=>map.removeLayer(l)); layers[v].addTo(map); };
+window.switchMap = v => {
+    currentMapLayerKey = v;
+    Object.values(layers).forEach(l=>map.removeLayer(l));
+    layers[v].addTo(map);
+    applyThemeMode();
+};
 window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="Follow selected car: OFF"; } };
 
 window.secureSearchPlace = () => {
