@@ -742,13 +742,13 @@ window.requestAddFleetVehicle = () => {
     const subId = document.getElementById('newCarSubId').value.trim();
 
     if(!name) {
-        window.showAlertModal("VALIDATION ERROR", "Please provide the car number plate (e.g. KAU 528F).");
+        window.showAlertModal("VALIDATION ERROR", "Please provide the car number plate.");
         return;
     }
 
     const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if(!subId || subId.length !== 36 || !uuidV4Regex.test(subId)) {
-        window.showAlertModal("REGISTRATION BLOCKED", "Invalid OneSignal Subscription ID format or length. A valid 36-character UUID is strictly required.");
+        window.showAlertModal("REGISTRATION BLOCKED", "Invalid car id.");
         return;
     }
 
