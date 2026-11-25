@@ -503,6 +503,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <button onclick="window.centerDestination()" class="btn-green">DEST</button>
   </div>
 
+  <button onclick="window.openStreetView()" style="background:#0f766e; margin-bottom:8px;">🌐 STREET VIEW (SELECTED CAR)</button>
+
   <div class="grid-2">
     <button id="followBtn" class="btn-primary">Follow selected car: ON</button>
     <button id="lockRouteBtn" class="btn-orange">LOCK: OFF</button>
@@ -961,6 +963,20 @@ window.fitAllCars = () => {
         follow = false;
         document.getElementById('followBtn').innerText = "Follow selected car: OFF";
     }
+};
+
+window.openStreetView = () => {
+    if (!selectedCarName || !carLatestData[selectedCarName]) {
+        window.showAlertModal("NO VEHICLE SELECTED", "Select a vehicle with live GPS coordinates first.");
+        return;
+    }
+    const { lat, lng } = carLatestData[selectedCarName];
+    if (!lat || !lng || (lat === 0 && lng === 0)) {
+        window.showAlertModal("NO GPS SIGNAL", `No valid coordinates available for ${selectedCarName}.`);
+        return;
+    }
+    const panoUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+    window.open(panoUrl, "_blank", "noopener,noreferrer");
 };
 
 function renderFleetUI() {
