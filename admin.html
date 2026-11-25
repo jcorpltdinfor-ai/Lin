@@ -2,41 +2,191 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AssetGuard Pro - Car Tracking System (Admin)</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AssetGuard Pro | Admin Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <style>
-* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
-body { margin: 0; height: 100vh; background: radial-gradient(circle at center, #2c5364, #0f2027); display: flex; flex-direction: column; align-items: center; overflow: hidden; padding-top: 50px; }
-#notification { position: fixed; top: 20px; background: #333; color: #fff; padding: 12px 25px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; z-index: 5000; animation: slideDown 0.4s ease-out; }
-@keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
-.hero-content h1 { margin: 0; font-size: 2.5rem; color: white; text-align: center; }
-.top-nav { width: 90%; max-width: 280px; background: linear-gradient(145deg, #1e3a46, #2c5364); border-radius: 50px; padding: 6px 15px; display: flex; justify-content: space-between; align-items: center; margin: 20px 0; }
-.logo { color: #fff; font-weight: 800; font-size: 0.70rem; letter-spacing: 0.05em; }
-.menu-btn { background: #fff; color: #2c5364; border: none; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 0.75rem; font-weight: 700; }
-.auth-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(8px); }
-.scene { width: 360px; height: 580px; perspective: 1200px; }
-.card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
-.card.flip-register { transform: rotateY(180deg); }
-.face { position: absolute; inset: 0; background: #fff; border-radius: 20px; padding: 22px; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto; }
-.register { transform: rotateY(180deg); }
-h2 { margin-bottom: 4px; color: #2c5364; font-weight: 800; font-size: 1.25rem; }
-input { width: 100%; padding: 11px 12px; margin: 6px 0; border-radius: 10px; border: 1px solid #ddd; outline: none; background: #f9fbff; font-size: 13px; }
-button.action-btn { width: 100%; padding: 12px; margin-top: 10px; background: #2c5364; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
-button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
-.link { text-align: center; margin-top: 10px; font-size: 0.8rem; color: #2c5364; cursor: pointer; font-weight: 600; }
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 4000; }
-.modal-content { background: #fff; padding: 30px; border-radius: 15px; width: 300px; text-align: center; }
+* { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body {
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle at center, #16213e, #0f0f1b);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  padding-top: 50px;
+  color: #ffffff;
+}
 
-.terms-container { display: flex; align-items: center; background: #f1f5f9; padding: 10px 12px; border-radius: 10px; margin: 6px 0; border: 1px solid #cbd5e1; cursor: pointer; }
-.terms-container input { width: auto; margin: 0 10px 0 0; accent-color: #2c5364; height: 16px; width: 16px; cursor: pointer; }
-.terms-container label { font-size: 0.8rem; font-weight: 700; color: #334155; cursor: pointer; }
+#notification {
+  position: fixed;
+  top: 20px;
+  background: #ef4444;
+  color: #fff;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  display: none;
+  z-index: 5000;
+  animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-transform: uppercase;
+  max-width: 90%;
+  text-align: center;
+}
+@keyframes slideDown { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.hero-content { display: flex; flex-direction: column; align-items: center; }
+.hero-content h1 { margin: 0; font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; text-align: center; }
+.hero-content p { margin: 0; font-size: 0.7rem; color: #64748b; letter-spacing: 4px; text-transform: uppercase; text-align: center; }
+
+.top-nav {
+  width: 280px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+  padding: 6px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+}
+.logo { color: #0081ff; font-weight: 900; font-size: 0.7rem; letter-spacing: 0.05em; }
+.menu-btn {
+  background: #0081ff;
+  color: white;
+  border: none;
+  padding: 5px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  backdrop-filter: blur(12px);
+}
+.scene { width: 340px; height: 550px; perspective: 1200px; }
+.card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.card.flip-register { transform: rotateY(180deg); }
+.face {
+  position: absolute;
+  inset: 0;
+  background: #1a1f26;
+  border: 1px solid #2b3139;
+  border-radius: 24px;
+  padding: 28px;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+}
+.register { transform: rotateY(180deg); }
+
+h2 { margin: 0 0 6px 0; font-size: 1.5rem; font-weight: 800; color: white; }
+.subtitle { font-size: 0.78rem; color: #94a3b8; margin: 0 0 14px 0; }
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"] {
+  width: 100%;
+  background: #0b0e11;
+  padding: 12px 14px;
+  margin: 6px 0;
+  border-radius: 12px;
+  border: 1px solid #2b3139;
+  color: white;
+  outline: none;
+  font-size: 0.88rem;
+}
+input:focus { border-color: #0081ff; }
+
+.terms-container {
+  display: flex;
+  align-items: center;
+  background: #0b0e11;
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin: 8px 0 4px 0;
+  border: 1px solid #2b3139;
+  cursor: pointer;
+}
+.terms-container input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0 10px 0 0;
+  accent-color: #0081ff;
+  cursor: pointer;
+}
+.terms-container label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+button.action-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  background: #0081ff;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: 0.2s;
+}
+button.action-btn:active { transform: scale(0.98); }
+button.action-btn:disabled { background: #334155; cursor: not-allowed; }
+
+.link {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: #64748b;
+  cursor: pointer;
+  font-weight: 600;
+}
+.link:hover { color: white; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 4000;
+}
+.modal-content {
+  background: #1a1f26;
+  border: 1px solid #2b3139;
+  padding: 28px;
+  border-radius: 20px;
+  width: 320px;
+  text-align: center;
+}
 </style>
 </head>
+
 <body>
 
 <div id="notification"></div>
@@ -44,37 +194,38 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 <div class="hero-content">
   <h1>AssetGuard Pro</h1>
   <nav class="top-nav">
-    <div class="logo">ADMIN VIEW PORTAL</div>
+    <div class="logo">ADMIN PORTAL</div>
     <button class="menu-btn" onclick="toggleAuth()">LOGIN</button>
   </nav>
+  <p>Fleet & Security Access</p>
 </div>
 
 <div class="auth-overlay" id="authOverlay" onclick="closeIfOutside(event)">
   <div class="scene" onclick="event.stopPropagation()">
     <div class="card" id="card">
-      
+
       <!-- Sign In Face -->
       <div class="face login">
         <h2>Admin Sign In</h2>
-        <p style="font-size:0.8rem; color:#64748b; margin-top:0; margin-bottom:12px;">View-Only Management Access</p>
+        <p class="subtitle">View-Only Management Access</p>
 
         <input id="l_email" type="email" placeholder="Email Address">
         <input id="l_pin" type="password" placeholder="Password / PIN">
 
         <div class="terms-container" onclick="document.getElementById('l_acceptTerms').click()">
           <input type="checkbox" id="l_acceptTerms" onclick="event.stopPropagation()">
-          <label for="l_acceptTerms"> Accept Terms & Conditions</label>
+          <label for="l_acceptTerms">Accept Terms & Conditions</label>
         </div>
 
-        <button class="action-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
-        <div class="link" onclick="showForgotModal()">Forgot Access?</div>
-        <div class="link" style="color:#64748b; margin-top:12px;" onclick="goRegister()">Create New Account</div>
+        <button class="action-btn" id="loginBtn" onclick="doLogin()">Authorize</button>
+        <div class="link" onclick="showForgotModal()">Reset Password</div>
+        <div class="link" onclick="goRegister()">Create New Account</div>
       </div>
 
       <!-- Register Face -->
       <div class="face register">
         <h2>New Account</h2>
-        <p style="font-size:0.8rem; color:#64748b; margin-top:0; margin-bottom:10px;">Admin Registration</p>
+        <p class="subtitle">Admin Registration</p>
 
         <input id="r_user" type="text" placeholder="Full Name">
         <input id="r_email" type="email" placeholder="Email Address">
@@ -84,11 +235,11 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
         <div class="terms-container" onclick="document.getElementById('r_acceptTerms').click()">
           <input type="checkbox" id="r_acceptTerms" onclick="event.stopPropagation()">
-          <label for="r_acceptTerms"> Accept Terms & Conditions</label>
+          <label for="r_acceptTerms">Accept Terms & Conditions</label>
         </div>
 
-        <button class="action-btn" id="regBtn" onclick="doSignup()">Create Account</button>
-        <div class="link" onclick="goLogin()">Return to Login</div>
+        <button class="action-btn" id="regBtn" onclick="doSignup()">Register Node</button>
+        <div class="link" onclick="goLogin()">Back to Login</div>
       </div>
 
     </div>
@@ -97,16 +248,16 @@ button.action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
 <div class="modal" id="forgotModal">
   <div class="modal-content">
-    <h2 style="margin-top:0;">Reset PIN</h2>
+    <h2 style="margin-top:0;">Recovery</h2>
+    <p class="subtitle">Enter your registered email</p>
     <input id="f_email" type="email" placeholder="Registered Email">
-    <button class="action-btn" onclick="doReset()">Send Reset Link</button>
-    <div class="link" style="color:red; margin-top:15px;" onclick="closeForgotModal()">Cancel</div>
+    <button class="action-btn" id="resetBtn" onclick="doReset()">Send Link</button>
+    <div class="link" style="color:#ef4444; margin-top:15px;" onclick="closeForgotModal()">Cancel</div>
   </div>
 </div>
 
 <script>
-// Updated redirection target to admin2.html
-const DASHBOARD_URL = "admin2.html"; 
+const DASHBOARD_URL = "admin2.html";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDCkP7LTzdNcvZhp24rRsQirYDCcrsuvOA",
@@ -116,20 +267,22 @@ const firebaseConfig = {
 };
 
 if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
 }
 const auth = firebase.auth();
 const rtdb = firebase.database();
 
-function msg(text, color="#ef4444") {
+function msg(text, color = "#ef4444") {
   const el = document.getElementById("notification");
-  el.innerText = text; el.style.backgroundColor = color; el.style.display = "block";
-  setTimeout(() => { el.style.display = "none"; }, 4000);
+  el.innerText = text;
+  el.style.backgroundColor = color;
+  el.style.display = "block";
+  setTimeout(() => { el.style.display = "none"; }, 3000);
 }
 
 function toggleAuth() {
-  const o = document.getElementById("authOverlay");
-  o.style.display = (o.style.display === "flex") ? "none" : "flex";
+  const overlay = document.getElementById("authOverlay");
+  overlay.style.display = (overlay.style.display === "flex") ? "none" : "flex";
 }
 function closeIfOutside(e) { if (e.target.id === "authOverlay") toggleAuth(); }
 function goRegister() { document.getElementById("card").className = "card flip-register"; }
@@ -137,57 +290,54 @@ function goLogin() { document.getElementById("card").className = "card"; }
 function showForgotModal() { document.getElementById("forgotModal").style.display = "flex"; }
 function closeForgotModal() { document.getElementById("forgotModal").style.display = "none"; }
 
+// LOGIN
 async function doLogin() {
   const email = document.getElementById("l_email").value.trim().toLowerCase();
   const pass = document.getElementById("l_pin").value.trim();
   const acceptTerms = document.getElementById("l_acceptTerms").checked;
   const role = "admin_view_only";
-
-  if (!email || !pass) return msg("Please enter your email and password.");
-  if (!acceptTerms) return msg("You must accept the terms and conditions to sign in.");
-
   const btn = document.getElementById("loginBtn");
-  btn.disabled = true; 
-  btn.innerText = "Authenticating...";
+
+  if (!email || !pass) return msg("Missing Credentials");
+  if (!acceptTerms) return msg("Accept Terms First");
+
+  btn.disabled = true;
+  btn.innerText = "CHECKING...";
 
   try {
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const userCredential = await auth.signInWithEmailAndPassword(email, pass);
     const user = userCredential.user;
-    
-    // Store session details
+
     localStorage.setItem("ag_active_uid", user.uid);
     localStorage.setItem("ag_session_active", "true");
     localStorage.setItem("ag_user_role", role);
     localStorage.setItem("ag_user_email", email);
 
-    const updatePayload = {
+    await rtdb.ref(`users/${user.uid}`).update({
       role: role,
       lastLogin: Date.now()
-    };
-
-    await rtdb.ref(`users/${user.uid}`).update(updatePayload);
+    });
     await rtdb.ref(`user_statuses/${user.uid}`).set("Active");
-
-    await rtdb.ref(`user_activity_logs`).push({
+    await rtdb.ref("user_activity_logs").push({
       uid: user.uid,
       category: "SECURITY",
       action: "Admin View-Only Login",
-      description: `Admin logged in successfully without location tracking.`,
+      description: "Admin logged in successfully without location tracking.",
       timestamp: Date.now(),
       device: navigator.userAgent
     });
 
     window.location.href = DASHBOARD_URL;
-
   } catch (err) {
-    console.error("Login Error:", err);
-    msg("Login failed: " + err.message);
-    btn.disabled = false; 
-    btn.innerText = "Sign In";
+    msg("Invalid Email or Password");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Authorize";
   }
 }
 
+// SIGNUP
 async function doSignup() {
   const name = document.getElementById("r_user").value.trim();
   const email = document.getElementById("r_email").value.trim().toLowerCase();
@@ -196,15 +346,14 @@ async function doSignup() {
   const confirm = document.getElementById("r_pass_confirm").value;
   const acceptTerms = document.getElementById("r_acceptTerms").checked;
   const role = "admin_view_only";
-
-  if (!name || !email || !pass) return msg("Please fill in all required fields.");
-  if (pass !== confirm) return msg("Passwords do not match.");
-  if (!acceptTerms) return msg("You must accept the terms and conditions to create an account.");
-  if (!navigator.onLine) return msg("Internet connection required for setup.");
-
   const btn = document.getElementById("regBtn");
+
+  if (!name || !email || !pass) return msg("Fields Required");
+  if (pass !== confirm) return msg("Passwords Mismatch");
+  if (!acceptTerms) return msg("Accept Terms First");
+  if (!navigator.onLine) return msg("No Internet Connection");
+
   btn.disabled = true;
-  btn.innerText = "Creating Account...";
 
   try {
     const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
@@ -212,7 +361,7 @@ async function doSignup() {
 
     localStorage.setItem("ag_user_email", email);
 
-    const userPayload = {
+    await rtdb.ref(`users/${user.uid}`).set({
       uid: user.uid,
       fullName: name,
       email: email,
@@ -220,34 +369,32 @@ async function doSignup() {
       role: role,
       joinedAt: Date.now(),
       lastLogin: Date.now()
-    };
-
-    await rtdb.ref(`users/${user.uid}`).set(userPayload);
+    });
     await rtdb.ref(`user_statuses/${user.uid}`).set("Active");
-    
-    msg("Account Created Successfully!", "#10b981");
-    setTimeout(() => { 
-      btn.disabled = false;
-      btn.innerText = "Create Account";
-      goLogin(); 
-    }, 1200);
-  } catch (err) { 
-    console.error("Signup Error:", err);
-    msg("Signup Error: " + err.message); 
+
+    msg("Success! Please Login", "#10b981");
+    goLogin();
+  } catch (err) {
+    msg(err.code === "auth/email-already-in-use" ? "Email already exists" : "Registration Failed");
+  } finally {
     btn.disabled = false;
-    btn.innerText = "Create Account";
   }
 }
 
+// PASSWORD RESET
 async function doReset() {
   const email = document.getElementById("f_email").value.trim();
-  if (!email) return msg("Enter email first");
+  if (!email) return msg("Enter Email");
+
   try {
     await auth.sendPasswordResetEmail(email);
-    msg("Reset link sent!", "#10b981");
+    msg("Check your inbox", "#10b981");
     closeForgotModal();
-  } catch (e) { msg(e.message); }
+  } catch (err) {
+    msg("Error sending link");
+  }
 }
 </script>
+
 </body>
 </html>
