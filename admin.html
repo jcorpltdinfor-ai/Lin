@@ -35,12 +35,12 @@ body {
   box-shadow: 0 10px 20px rgba(0,0,0,0.4);
   display: none;
   z-index: 5000;
-  animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   text-transform: uppercase;
   max-width: 90%;
   text-align: center;
 }
-@keyframes slideDown { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes slideDown { from { transform: translateY(-60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .hero-content { display: flex; flex-direction: column; align-items: center; }
 .hero-content h1 { margin: 0; font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; text-align: center; }
@@ -81,7 +81,7 @@ body {
   backdrop-filter: blur(12px);
 }
 .scene { width: 340px; height: 550px; perspective: 1200px; }
-.card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
 .card.flip-register { transform: rotateY(180deg); }
 .face {
   position: absolute;
@@ -152,7 +152,7 @@ button.action-btn {
   cursor: pointer;
   font-weight: 800;
   font-size: 0.9rem;
-  transition: 0.2s;
+  transition: 0.15s;
 }
 button.action-btn:active { transform: scale(0.98); }
 button.action-btn:disabled { background: #334155; cursor: not-allowed; }
@@ -209,8 +209,8 @@ button.action-btn:disabled { background: #334155; cursor: not-allowed; }
         <h2>Admin Sign In</h2>
         <p class="subtitle">View-Only Management Access</p>
 
-        <input id="l_email" type="email" placeholder="Email Address">
-        <input id="l_pin" type="password" placeholder="Password / PIN">
+        <input id="l_email" type="email" placeholder="Email Address" autocomplete="email">
+        <input id="l_pin" type="password" placeholder="Password / PIN" autocomplete="current-password">
 
         <div class="terms-container" onclick="document.getElementById('l_acceptTerms').click()">
           <input type="checkbox" id="l_acceptTerms" onclick="event.stopPropagation()">
@@ -271,13 +271,15 @@ if (!firebase.apps.length) {
 }
 const auth = firebase.auth();
 const rtdb = firebase.database();
+let isNavigating = false;
 
 function msg(text, color = "#ef4444") {
   const el = document.getElementById("notification");
   el.innerText = text;
   el.style.backgroundColor = color;
   el.style.display = "block";
-  setTimeout(() => { el.style.display = "none"; }, 3000);
+  clearTimeout(msg._timer);
+  msg._timer = setTimeout(() => { el.style.display = "none"; }, 3000);
 }
 
 function toggleAuth() {
@@ -290,8 +292,19 @@ function goLogin() { document.getElementById("card").className = "card"; }
 function showForgotModal() { document.getElementById("forgotModal").style.display = "flex"; }
 function closeForgotModal() { document.getElementById("forgotModal").style.display = "none"; }
 
-// LOGIN
+window.addEventListener("offline", () => {
+  msg("NO INTERNET CONNECTION");
+});
+
+window.addEventListener("online", () => {
+  msg("CONNECTION RESTORED", "#10b981");
+});
+
+// LOGIN (fast redirect + non-blocking DB log writes)
 async function doLogin() {
+  if (isNavigating) return;
+  if (!navigator.onLine) return msg("No Internet Connection");
+
   const email = document.getElementById("l_email").value.trim().toLowerCase();
   const pass = document.getElementById("l_pin").value.trim();
   const acceptTerms = document.getElementById("l_acceptTerms").checked;
@@ -305,7 +318,6 @@ async function doLogin() {
   btn.innerText = "CHECKING...";
 
   try {
-    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const userCredential = await auth.signInWithEmailAndPassword(email, pass);
     const user = userCredential.user;
 
@@ -314,24 +326,24 @@ async function doLogin() {
     localStorage.setItem("ag_user_role", role);
     localStorage.setItem("ag_user_email", email);
 
-    await rtdb.ref(`users/${user.uid}`).update({
-      role: role,
-      lastLogin: Date.now()
-    });
-    await rtdb.ref(`user_statuses/${user.uid}`).set("Active");
-    await rtdb.ref("user_activity_logs").push({
-      uid: user.uid,
-      category: "SECURITY",
-      action: "Admin View-Only Login",
-      description: "Admin logged in successfully without location tracking.",
-      timestamp: Date.now(),
-      device: navigator.userAgent
-    });
+    // Fire DB updates in background so navigation isn't delayed
+    Promise.all([
+      rtdb.ref(`users/${user.uid}`).update({ role, lastLogin: Date.now() }),
+      rtdb.ref(`user_statuses/${user.uid}`).set("Active"),
+      rtdb.ref("user_activity_logs").push({
+        uid: user.uid,
+        category: "SECURITY",
+        action: "Admin View-Only Login",
+        description: "Admin logged in successfully without location tracking.",
+        timestamp: Date.now(),
+        device: navigator.userAgent
+      })
+    ]).catch(() => {});
 
-    window.location.href = DASHBOARD_URL;
+    isNavigating = true;
+    window.location.replace(DASHBOARD_URL);
   } catch (err) {
     msg("Invalid Email or Password");
-  } finally {
     btn.disabled = false;
     btn.innerText = "Authorize";
   }
@@ -339,6 +351,8 @@ async function doLogin() {
 
 // SIGNUP
 async function doSignup() {
+  if (!navigator.onLine) return msg("No Internet Connection");
+
   const name = document.getElementById("r_user").value.trim();
   const email = document.getElementById("r_email").value.trim().toLowerCase();
   const phone = document.getElementById("r_phone").value.trim();
@@ -351,9 +365,9 @@ async function doSignup() {
   if (!name || !email || !pass) return msg("Fields Required");
   if (pass !== confirm) return msg("Passwords Mismatch");
   if (!acceptTerms) return msg("Accept Terms First");
-  if (!navigator.onLine) return msg("No Internet Connection");
 
   btn.disabled = true;
+  btn.innerText = "CREATING...";
 
   try {
     const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
@@ -361,16 +375,18 @@ async function doSignup() {
 
     localStorage.setItem("ag_user_email", email);
 
-    await rtdb.ref(`users/${user.uid}`).set({
-      uid: user.uid,
-      fullName: name,
-      email: email,
-      phone: phone || "Not provided",
-      role: role,
-      joinedAt: Date.now(),
-      lastLogin: Date.now()
-    });
-    await rtdb.ref(`user_statuses/${user.uid}`).set("Active");
+    await Promise.all([
+      rtdb.ref(`users/${user.uid}`).set({
+        uid: user.uid,
+        fullName: name,
+        email: email,
+        phone: phone || "Not provided",
+        role: role,
+        joinedAt: Date.now(),
+        lastLogin: Date.now()
+      }),
+      rtdb.ref(`user_statuses/${user.uid}`).set("Active")
+    ]);
 
     msg("Success! Please Login", "#10b981");
     goLogin();
@@ -378,11 +394,13 @@ async function doSignup() {
     msg(err.code === "auth/email-already-in-use" ? "Email already exists" : "Registration Failed");
   } finally {
     btn.disabled = false;
+    btn.innerText = "Register Node";
   }
 }
 
 // PASSWORD RESET
 async function doReset() {
+  if (!navigator.onLine) return msg("No Internet Connection");
   const email = document.getElementById("f_email").value.trim();
   if (!email) return msg("Enter Email");
 
@@ -390,7 +408,7 @@ async function doReset() {
     await auth.sendPasswordResetEmail(email);
     msg("Check your inbox", "#10b981");
     closeForgotModal();
-  } catch (err) {
+  } catch (e) {
     msg("Error sending link");
   }
 }
