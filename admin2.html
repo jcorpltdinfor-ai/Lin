@@ -77,6 +77,65 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 }
 #statusToast.show { top: 25px; }
 
+/* Floating Top Offline Pill & Refresh Button */
+#offline-pill {
+    display: none;
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15000;
+    background: #0f1c30;
+    color: #ffffff;
+    border: 2px solid #ef4444;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    transition: transform 0.12s ease;
+}
+
+#offline-pill .offline-refresh-btn {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    padding: 5px 11px;
+    width: auto;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#offline-pill .offline-refresh-btn:hover {
+    background: #dc2626;
+}
+
+/* Bottom Warning Strip (above #deadZone) */
+#offline-bar {
+    display: none;
+    position: fixed;
+    bottom: 22px;
+    left: 0;
+    width: 100%;
+    z-index: 15000;
+    background: #ef4444;
+    color: #ffffff;
+    text-align: center;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+}
+
 .tactical-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.85); z-index: 20000; display: none;
@@ -150,7 +209,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     padding: 2px;
 }
 
-#speedHud { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
+#speedHud { position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
 .blinking { animation: pulse 0.8s infinite; color: var(--saxo-red) !important; border-color: var(--saxo-red) !important; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
@@ -204,6 +263,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <body>
 
 <div id="statusToast">SYSTEM ACTIVE</div>
+
+<!-- Floating Top Offline Pill & Refresh Button -->
+<div id="offline-pill" role="status" aria-live="polite">
+  <span>⚠️ LOST NETWORK CONNECTION</span>
+  <button type="button" class="offline-refresh-btn" onclick="window.retryConnection()">
+    ↻ REFRESH
+  </button>
+</div>
+
+<!-- Bottom Warning Strip -->
+<div id="offline-bar" role="status" aria-live="polite">
+  ⚠️ LOST NETWORK CONNECTION
+</div>
 
 <!-- Modern Security Clearance Modal -->
 <div id="adminModal" class="tactical-modal">
@@ -456,6 +528,55 @@ let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = 
 let routeLine = null, routeFencePolyline = null, destMarker = null, fenceCircle = null, activeMarker = null, lastPushTime = 0;
 let lastDestKey = "";
 
+// --- INSTANT OFFLINE BANNER & REFRESH ---
+function updateNetworkUI() {
+    const isOffline = !navigator.onLine;
+    const pill = document.getElementById('offline-pill');
+    const bar = document.getElementById('offline-bar');
+    if (pill) pill.style.display = isOffline ? 'flex' : 'none';
+    if (bar) bar.style.display = isOffline ? 'block' : 'none';
+    if (isOffline) {
+        document.getElementById('statusHeader').className = "offline";
+        document.getElementById('statusHeader').innerText = "SIGNAL: LOST";
+    }
+}
+
+window.retryConnection = () => {
+    updateNetworkUI();
+    if (navigator.onLine) {
+        window.location.reload();
+    } else {
+        const pill = document.getElementById('offline-pill');
+        if (pill) {
+            pill.style.transform = 'translateX(-53%)';
+            setTimeout(() => { pill.style.transform = 'translateX(-47%)'; }, 80);
+            setTimeout(() => { pill.style.transform = 'translateX(-50%)'; }, 160);
+        }
+        window.sendPush("STILL OFFLINE. CHECK CONNECTION", selectedCarName || "SYSTEM", true);
+    }
+};
+
+window.addEventListener('online', () => {
+    updateNetworkUI();
+    const toast = document.getElementById('statusToast');
+    toast.innerText = "NETWORK CONNECTION RESTORED";
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+    if (fleet.length > 0) renderFleetUI();
+});
+
+window.addEventListener('offline', () => {
+    updateNetworkUI();
+    const toast = document.getElementById('statusToast');
+    toast.innerText = "LOST NETWORK CONNECTION";
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+    if (fleet.length > 0) renderFleetUI();
+});
+
+window.addEventListener('load', updateNetworkUI);
+updateNetworkUI();
+
 window.handleLogout = () => {
     document.getElementById('logoutModal').style.display = 'flex';
 };
@@ -552,15 +673,17 @@ window.showAlertModal = (title, desc) => {
     document.getElementById('infoModal').style.display = 'flex';
 };
 
-window.sendPush = (msg, targetName = selectedCarName) => {
+window.sendPush = (msg, targetName = selectedCarName, force = false) => {
     const now = Date.now();
-    if (now - lastPushTime > 15000) {
+    if (force || now - lastPushTime > 15000) {
         lastPushTime = now;
         
         const toast = document.getElementById('statusToast');
         toast.innerText = msg.toUpperCase();
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 4000);
+
+        if (!navigator.onLine) return;
 
         const carObj = fleet.find(c => c.name === targetName);
         const carData = carLatestData[targetName] || {};
@@ -689,7 +812,7 @@ window.selectCar = (name) => {
     document.getElementById('speedSetBtn').innerText = "SET";
     document.getElementById('speedHud').classList.remove("blinking");
     document.getElementById('statusHeader').className = "offline";
-    document.getElementById('statusHeader').innerText = "FLEET: STANDBY";
+    document.getElementById('statusHeader').innerText = navigator.onLine ? "FLEET: STANDBY" : "SIGNAL: LOST";
 
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
@@ -708,7 +831,7 @@ window.selectCar = (name) => {
             .bindTooltip(name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
             .bindPopup(`<b>${name}</b><br>Speed: ${spd} km/h`);
 
-        const online = (Date.now() - data.ts) < 15000;
+        const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
         document.getElementById('statusHeader').className = online ? "online" : "offline";
         document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
@@ -769,7 +892,7 @@ function renderFleetUI() {
     fleet.forEach(car => {
         const data = carLatestData[car.name] || { speed: "0.0", ts: 0 };
         const carSpd = (parseFloat(data.speed) || 0).toFixed(1);
-        const online = (Date.now() - data.ts) < 15000;
+        const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
         const isSelected = (car.name === selectedCarName);
         
         const card = document.createElement('div');
@@ -935,7 +1058,7 @@ function initFirebaseSync() {
                     if (routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
                 }
 
-                const online = (Date.now() - data.ts) < 15000;
+                const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
                 document.getElementById('statusHeader').className = online ? "online" : "offline";
                 document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
