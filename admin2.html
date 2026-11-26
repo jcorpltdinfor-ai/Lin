@@ -186,33 +186,33 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     flex-direction: column;
 }
 #streetViewBar {
-    height: 40px;
+    height: 52px;
     background: var(--saxo-navy);
     border-bottom: 1px solid var(--saxo-blue);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 10px;
-    gap: 8px;
+    padding: 0 12px;
+    gap: 10px;
     flex-shrink: 0;
     z-index: 4;
 }
 #streetViewTitle {
     color: #ffffff;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 #streetViewCloseBtn {
-    width: 26px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--saxo-red);
     color: #ffffff;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 900;
     line-height: 1;
     padding: 0;
@@ -245,48 +245,27 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     border: 0;
     background: #070d16;
     display: block;
-    transition: opacity 0.2s ease;
-}
-#streetViewFrame.offline-hidden {
-    opacity: 0;
-    pointer-events: none;
 }
 #streetViewLoading {
     position: absolute;
     inset: 0;
     background: #070d16;
     color: var(--saxo-blue);
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 1px;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    padding: 20px;
     z-index: 3;
     pointer-events: none;
-}
-#streetViewLoading.interactive {
-    pointer-events: auto;
-}
-#streetViewRetryBtn {
-    width: auto;
-    padding: 6px 14px;
-    font-size: 10px;
-    border-radius: 999px;
-    background: var(--saxo-blue);
-    color: #ffffff;
-    display: none;
 }
 
 #map { height:100%; z-index:1; filter:var(--map-filter); transition: filter 0.35s ease; background:#1a1a1a; }
 
 #panel {
     position:absolute; top:10px; left:10px; background: var(--panel-bg); color: var(--panel-text); 
-    padding:14px; font-size:12px; border-radius:16px; z-index:1000; width:316px;
+    padding:15px; font-size:12px; border-radius:16px; z-index:1000; width:320px;
     max-height:94vh; overflow-y:auto; box-shadow:0 12px 45px rgba(0,0,0,0.45); 
     transition: transform 0.3s ease-out, background 0.25s ease, color 0.25s ease;
     scrollbar-width: thin; scrollbar-color: var(--saxo-blue) transparent;
@@ -296,25 +275,25 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 #panel.hidden { transform: translateX(-340px); }
 
 #statusHeader { 
-    font-weight: 800; padding: 8px; border-radius: 8px; text-align: center; 
-    margin-bottom: 10px; color: #fff; font-size: 10.5px; text-transform: uppercase; 
+    font-weight: 800; padding: 10px; border-radius: 8px; text-align: center; 
+    margin-bottom: 12px; color: #fff; font-size: 11px; text-transform: uppercase; 
     letter-spacing: 1.1px; cursor: default; user-select: none;
 }
 .online { background: var(--saxo-green); box-shadow: 0 0 15px rgba(0,192,125,0.4); }
 .offline { background: var(--saxo-red); }
 
-.stat-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--panel-border); font-size: 11.5px; }
+.stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--panel-border); }
 .stat-row b { color: var(--saxo-blue); }
 
-.panel-divider { border: 0; border-top: 1px solid var(--divider-color); margin: 10px 0; }
+.panel-divider { border: 0; border-top: 1px solid var(--divider-color); margin: 12px 0; }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .grid-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 4px; margin-bottom: 0; }
 
-.control-group { background: var(--surface-group); padding: 8px 9px; border-radius: 10px; border: 1px solid var(--panel-border); }
-.control-label { font-size: 8.5px; font-weight: 800; color: var(--saxo-blue); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+.control-group { background: var(--surface-group); padding: 10px; border-radius: 10px; border: 1px solid var(--panel-border); }
+.control-label { font-size: 8.5px; font-weight: 800; color: var(--saxo-blue); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
 
-button { padding: 7px 8px; font-size: 10px; width: 100%; border-radius: 7px; border: none; cursor: pointer; font-weight: 700; background: var(--saxo-slate); color: #fff; transition: 0.2s; }
+button { padding:10px; font-size:11px; width:100%; border-radius:8px; border:none; cursor:pointer; font-weight:700; background:var(--saxo-slate); color:#fff; transition: 0.2s; }
 button:active { transform: scale(0.96); }
 .btn-primary { background:var(--saxo-blue); }
 .btn-green { background:var(--saxo-green); }
@@ -323,8 +302,8 @@ button:active { transform: scale(0.96); }
 .btn-red { background:var(--saxo-red); }
 
 input, select { 
-    padding: 8px 9px; width: 100%; border-radius: 7px; border: 2px solid var(--input-border); 
-    font-size: 11px; font-weight: 700; background: var(--input-bg); 
+    padding:10px; width:100%; border-radius:8px; border: 2px solid var(--input-border); 
+    font-size:12px; font-weight: 700; background: var(--input-bg); 
     color: var(--input-text) !important; outline: none; transition: 0.2s;
 }
 input:focus { border-color: var(--saxo-blue); box-shadow: 0 0 0 3px rgba(0,163,224,0.15); }
@@ -345,15 +324,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .blinking { animation: pulse 0.8s infinite; color: var(--saxo-red) !important; border-color: var(--saxo-red) !important; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-#hoverBtn { position:absolute; top:10px; right:10px; width:44px; height:44px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:44px; font-size:22px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-#logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: var(--surface-subtle); padding: 7px; border-radius: 6px; margin-top: 8px; max-height: 70px; overflow-y: auto; color: var(--panel-text); opacity: 0.75; border: 1px inset var(--panel-border); }
+#hoverBtn { position:absolute; top:10px; right:10px; width:50px; height:50px; border-radius:50%; background:var(--saxo-navy); color:#fff; text-align:center; line-height:50px; font-size:26px; cursor:pointer; z-index:1000; border: 2px solid var(--saxo-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+#logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: var(--surface-subtle); padding: 8px; border-radius: 6px; margin-top: 10px; max-height: 80px; overflow-y: auto; color: var(--panel-text); opacity: 0.75; border: 1px inset var(--panel-border); }
 
 .fleet-card { 
     background: var(--card-bg); 
     border: 1px solid rgba(0, 163, 224, 0.25); 
     border-radius: 10px; 
-    padding: 9px 10px; 
-    margin-bottom: 7px; 
+    padding: 10px 12px; 
+    margin-bottom: 8px; 
     font-size: 11px; 
     transition: all 0.2s ease;
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
@@ -373,19 +352,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     align-items: center;
     font-weight: 800; 
     color: var(--card-text); 
-    margin-bottom: 5px; 
-    font-size: 11.5px;
+    margin-bottom: 6px; 
+    font-size: 12px;
 }
 .fleet-meta {
     display: grid;
     grid-template-columns: 1fr;
     gap: 4px;
     font-size: 10px;
-    margin-bottom: 7px;
+    margin-bottom: 8px;
     color: var(--panel-text);
     opacity: 0.88;
     background: var(--surface-subtle);
-    padding: 5px 8px;
+    padding: 6px 8px;
     border-radius: 6px;
 }
 .status-pill {
@@ -394,7 +373,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     gap: 4px;
     font-size: 9px;
     font-weight: 700;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 12px;
 }
 .status-pill.live { background: rgba(0,192,125,0.15); color: #00a86b; }
@@ -429,10 +408,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
     <div id="streetViewViewport">
         <div id="streetViewLinkBlocker" aria-hidden="true"></div>
-        <div id="streetViewLoading">
-            <span id="streetViewStatusText">LOADING STREET VIEW...</span>
-            <button id="streetViewRetryBtn" type="button" onclick="window.openStreetView()">↻ RETRY</button>
-        </div>
+        <div id="streetViewLoading">LOADING STREET VIEW...</div>
         <iframe id="streetViewFrame" loading="eager" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
     </div>
 </div>
@@ -472,8 +448,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <input type="password" id="settingsNewPass" placeholder="Enter new internal PIN..." style="margin-bottom: 18px; font-size: 11px; color:#000 !important;">
 
         <div class="grid-2">
-            <button onclick="window.updateInternalPin()" class="btn-primary" style="font-size: 10.5px; padding: 8px;">Update Internal PIN</button>
-            <button onclick="window.resetInternalPinForm()" style="background: #333; font-size: 10.5px; padding: 8px;">Reset</button>
+            <button onclick="window.updateInternalPin()" class="btn-primary" style="font-size: 10.5px; padding: 10px;">Update Internal PIN</button>
+            <button onclick="window.resetInternalPinForm()" style="background: #333; font-size: 10.5px; padding: 10px;">Reset</button>
         </div>
     </div>
 </div>
@@ -495,7 +471,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="modal-box" style="border-color: var(--saxo-blue);">
         <h3 id="infoTitle" style="margin:0 0 10px 0; color:var(--saxo-blue);">SYSTEM NOTICE</h3>
         <p id="infoDesc" style="font-size:11px; opacity:0.85; margin-bottom:20px; line-height: 1.4;">Message</p>
-        <button onclick="document.getElementById('infoModal').style.display='none'" class="btn-primary" style="padding: 8px;">OK</button>
+        <button onclick="document.getElementById('infoModal').style.display='none'" class="btn-primary" style="padding: 10px;">OK</button>
     </div>
 </div>
 
@@ -532,29 +508,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <div id="deadZone">POWERED BY— ASSETGUARD PRO</div>
 
 <div id="panel">
-  <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 5px 7px; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 7px; gap: 5px;">
-      <div style="font-size: 9px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">SESSION: ...</div>
+  <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 6px 8px; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 8px; gap: 6px;">
+      <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">SESSION: ...</div>
       <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
-          <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
+          <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 5px 7px; font-size: 9.5px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
               ↻ Refresh
           </button>
-          <button onclick="window.openSettingsModal()" title="Internal Security Settings" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,163,224,0.12); color: var(--saxo-blue); border: 1px solid rgba(0,163,224,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l-.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <button onclick="window.openSettingsModal()" title="Internal Security Settings" style="width: auto; padding: 5px 7px; font-size: 9.5px; font-weight: 700; background: rgba(0,163,224,0.12); color: var(--saxo-blue); border: 1px solid rgba(0,163,224,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l-.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
-          <button onclick="window.handleLogout()" title="Log Out" style="width: auto; padding: 4px 7px; font-size: 9px; font-weight: 700; background: rgba(255,90,95,0.12); color: var(--saxo-red); border: 1px solid rgba(255,90,95,0.3); border-radius: 6px; display: flex; align-items: center; gap: 3px; cursor: pointer; transition: 0.2s;">
+          <button onclick="window.handleLogout()" title="Log Out" style="width: auto; padding: 5px 8px; font-size: 9.5px; font-weight: 700; background: rgba(255,90,95,0.12); color: var(--saxo-red); border: 1px solid rgba(255,90,95,0.3); border-radius: 6px; display: flex; align-items: center; gap: 3px; cursor: pointer; transition: 0.2s;">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               <span>Log Out</span>
           </button>
       </div>
   </div>
 
-  <div style="margin-bottom: 8px;">
-      <button id="themeToggleBtn" onclick="window.toggleThemeMode()" style="background: var(--saxo-navy); border: 1px solid var(--saxo-blue); padding: 6px 8px; font-size: 9.5px; letter-spacing: 0.5px;">THEME: BRIGHT</button>
+  <div style="margin-bottom: 10px;">
+      <button id="themeToggleBtn" onclick="window.toggleThemeMode()" style="background: var(--saxo-navy); border: 1px solid var(--saxo-blue); padding: 7px 10px; font-size: 10px; letter-spacing: 0.5px;">THEME: BRIGHT</button>
   </div>
 
   <div id="statusHeader" class="offline">FLEET: STANDBY</div>
   
-  <div id="activeTargetBanner" style="font-size: 9.5px; font-weight: 800; color: var(--saxo-green); margin-bottom: 7px; text-align: center; background: rgba(0,192,125,0.1); padding: 5px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
+  <div id="activeTargetBanner" style="font-size: 10px; font-weight: 800; color: var(--saxo-green); margin-bottom: 8px; text-align: center; background: rgba(0,192,125,0.1); padding: 6px; border-radius: 6px; border: 1px solid rgba(0,192,125,0.3);">ACTIVE TARGET: NONE</div>
 
   <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0.0 km/h</b></div>
   <div class="stat-row"><span>Area Speed:</span> <b id="areaLimit" style="color:var(--saxo-red)">-- km/h</b></div>
@@ -562,20 +538,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   <hr class="panel-divider">
 
-  <div class="control-group" style="margin-bottom:8px;">
+  <div class="control-group" style="margin-bottom:10px;">
     <span class="control-label">Register New Vehicle</span>
-    <input type="text" id="newCarName" placeholder="Number Plate" style="margin-bottom:5px; font-size:10.5px; text-transform: uppercase;">
-    <input type="text" id="newCarSubId" placeholder="Car ID / Sub " style="margin-bottom:6px; font-size:10px;">
-    <button onclick="window.requestAddFleetVehicle()" class="btn-primary" style="font-size:10px; padding:8px; box-shadow: 0 4px 12px rgba(0,163,224,0.2);">+ REGISTER VEHICLE</button>
+    <input type="text" id="newCarName" placeholder="Number Plate" style="margin-bottom:6px; font-size:11px; text-transform: uppercase;">
+    <input type="text" id="newCarSubId" placeholder="Car ID / Sub " style="margin-bottom:8px; font-size:10px;">
+    <button onclick="window.requestAddFleetVehicle()" class="btn-primary" style="font-size:11px; padding:11px; box-shadow: 0 4px 12px rgba(0,163,224,0.2);">+ REGISTER VEHICLE</button>
   </div>
 
   <div class="control-label" style="display:flex; justify-content:space-between; align-items:center;">
       <span>Fleet Roster</span>
       <span id="fleetCountBadge" style="background:var(--saxo-navy); color:#fff; padding:1px 6px; border-radius:10px; font-size:9px;">0 Units</span>
   </div>
-  <div id="fleetListContainer" style="max-height: 185px; overflow-y: auto; margin-bottom: 8px; padding-right: 2px;"></div>
+  <div id="fleetListContainer" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px; padding-right: 2px;"></div>
 
-  <div class="control-group" style="margin-bottom:7px;">
+  <div class="control-group" style="margin-bottom:8px;">
     <span class="control-label">Tactical Orientation</span>
     <div class="grid-2">
         <button id="rotateBtn" onclick="window.toggleRotation()" style="background:var(--saxo-navy)">MAP: FIXED</button>
@@ -583,12 +559,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
   </div>
 
-  <div class="control-group" style="margin-bottom:7px;">
+  <div class="control-group" style="margin-bottom:8px;">
     <span class="control-label">Speed Governance (Selected Car)</span>
-    <div style="display:flex; gap:4px; height:32px;">
-        <input type="number" id="maxSpeedLimit" placeholder="KM/H" style="flex:2; height:100%; padding: 5px 8px;">
-        <button id="speedSetBtn" onclick="window.secureSpeedSet()" style="flex:1; background:var(--saxo-navy); height:100%; padding: 5px;">SET</button>
-        <button onclick="window.openSpeedClear()" class="btn-red" style="width:44px; height:100%; padding: 5px; font-size:9px;">CLR</button>
+    <div style="display:flex; gap:4px; height:38px;">
+        <input type="number" id="maxSpeedLimit" placeholder="KM/H" style="flex:2; height:100%;">
+        <button id="speedSetBtn" onclick="window.secureSpeedSet()" style="flex:1; background:var(--saxo-navy); height:100%;">SET</button>
+        <button onclick="window.openSpeedClear()" class="btn-red" style="width:50px; font-size:9px;">CLR</button>
     </div>
   </div>
 
@@ -602,18 +578,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <button onclick="window.clearRouteFence()" style="background:#444">CLR R-FENCE</button>
   </div>
 
-  <div class="control-group" style="margin-bottom:7px;">
+  <div class="control-group" style="margin-bottom:8px;">
     <span class="control-label">History Archive (Selected Car)</span>
-    <input type="date" id="historyDate" style="margin-bottom:5px; padding: 6px 8px;">
+    <input type="date" id="historyDate" style="margin-bottom:5px;">
     <div class="grid-2">
         <button id="historyBtn" class="btn-purple">RENDER</button>
         <button onclick="window.clearHistoryMap()" style="background:#444">CLEAR</button>
     </div>
   </div>
 
-  <div class="control-group" style="margin-bottom:8px;">
+  <div class="control-group" style="margin-bottom:10px;">
     <span class="control-label">Tactical Layers</span>
-    <select id="mapStyle" onchange="window.switchMap(this.value)" style="padding: 6px 8px;">
+    <select id="mapStyle" onchange="window.switchMap(this.value)">
       <option value="googleTraffic" selected>Standard Traffic</option>
       <option value="esriWorld">Live Terrain</option>
       <option value="googleSat">Satellite Alpha</option>
@@ -625,12 +601,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <button onclick="window.centerDestination()" class="btn-green">DEST</button>
   </div>
 
-  <div style="margin-bottom: 6px;">
-    <button onclick="window.openStreetView()" style="background:#0f766e;">🌐 STREET VIEW</button>
-  </div>
+  <button onclick="window.openStreetView()" style="background:#0f766e; margin-bottom:8px;">🌐 STREET VIEW (SELECTED CAR)</button>
 
   <div class="grid-2">
-    <button id="followBtn" class="btn-primary">Follow car: ON</button>
+    <button id="followBtn" class="btn-primary">Follow selected car: ON</button>
     <button id="lockRouteBtn" class="btn-orange">LOCK: OFF</button>
   </div>
   
@@ -641,7 +615,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <button onclick="window.secureSearchPlace()" class="btn-primary">INITIATE ROUTE</button>
       <button onclick="window.secureClearRoute()" class="btn-red">CLEAR ROUTE</button>
   </div>
-  <button onclick="window.openSystemReset()" style="background:var(--saxo-red); font-size:9px; padding:6px; opacity:0.65;">SYSTEM RESET</button>
+  <button onclick="window.openSystemReset()" style="background:var(--saxo-red); font-size:9px; opacity:0.6;">SYSTEM RESET</button>
   
   <div id="logDisplay">Admin View Portal Initialized.</div>
 </div>
@@ -749,10 +723,6 @@ function updateNetworkUI() {
     if (isOffline) {
         document.getElementById('statusHeader').className = "offline";
         document.getElementById('statusHeader').innerText = "SIGNAL: LOST";
-        const svModal = document.getElementById('streetViewModal');
-        if (svModal && svModal.style.display === 'flex') {
-            showStreetViewOfflineState();
-        }
     }
 }
 
@@ -1007,7 +977,7 @@ window.selectCar = (name) => {
     localStorage.setItem(STORAGE_SELECTED_KEY, name);
     lastDestKey = "";
     follow = true;
-    document.getElementById('followBtn').innerText = "Follow car: ON";
+    document.getElementById('followBtn').innerText = "Follow selected car: ON";
     routeLocked = false;
     document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
     
@@ -1071,7 +1041,7 @@ window.focusCar = (name) => {
         window.selectCar(name);
     }
     follow = true;
-    document.getElementById('followBtn').innerText = "Follow car: ON";
+    document.getElementById('followBtn').innerText = "Follow selected car: ON";
     routeLocked = false;
     document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
 
@@ -1089,30 +1059,11 @@ window.fitAllCars = () => {
     if(points.length > 0) {
         map.fitBounds(L.latLngBounds(points), {padding: [70, 70]});
         follow = false;
-        document.getElementById('followBtn').innerText = "Follow car: OFF";
+        document.getElementById('followBtn').innerText = "Follow selected car: OFF";
     }
 };
 
 let streetViewTimeout = null;
-
-function showStreetViewOfflineState() {
-    if (streetViewTimeout) {
-        clearTimeout(streetViewTimeout);
-        streetViewTimeout = null;
-    }
-    const frame = document.getElementById('streetViewFrame');
-    const loader = document.getElementById('streetViewLoading');
-    const statusText = document.getElementById('streetViewStatusText');
-    const retryBtn = document.getElementById('streetViewRetryBtn');
-    frame.onload = null;
-    frame.onerror = null;
-    frame.classList.add('offline-hidden');
-    frame.src = 'about:blank';
-    loader.style.display = 'flex';
-    loader.classList.add('interactive');
-    statusText.innerText = 'NO INTERNET CONNECTION — STREET VIEW UNAVAILABLE';
-    retryBtn.style.display = 'inline-block';
-}
 
 window.openStreetView = () => {
     if (!selectedCarName || !carLatestData[selectedCarName]) {
@@ -1125,48 +1076,25 @@ window.openStreetView = () => {
         return;
     }
 
-    if (!navigator.onLine) {
-        window.showAlertModal("NO INTERNET CONNECTION", "Turn on internet access to load Street View.");
-        return;
-    }
-
     if (streetViewTimeout) clearTimeout(streetViewTimeout);
 
     const frame = document.getElementById('streetViewFrame');
     const loader = document.getElementById('streetViewLoading');
-    const statusText = document.getElementById('streetViewStatusText');
-    const retryBtn = document.getElementById('streetViewRetryBtn');
-    const embedUrl = `https://www.google.com/maps?layer=c&cbll=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&cbp=11,0,8,0,0&output=svembed`;
+    const embedUrl = `https://www.google.com/maps?layer=c&cbll=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&cbp=11,0,0,0,0&output=svembed`;
 
     document.getElementById('streetViewTitle').innerText = `STREET VIEW · ${selectedCarName}`;
-    frame.classList.remove('offline-hidden');
     loader.style.display = 'flex';
-    loader.classList.remove('interactive');
-    statusText.innerText = 'LOADING STREET VIEW...';
-    retryBtn.style.display = 'none';
+    loader.innerText = 'LOADING STREET VIEW...';
     document.getElementById('streetViewModal').style.display = 'flex';
 
-    frame.onerror = () => {
-        showStreetViewOfflineState();
-    };
-
     frame.onload = () => {
-        if (!navigator.onLine) {
-            showStreetViewOfflineState();
-            return;
-        }
         if (streetViewTimeout) clearTimeout(streetViewTimeout);
         loader.style.display = 'none';
-        retryBtn.style.display = 'none';
     };
 
     streetViewTimeout = setTimeout(() => {
-        if (!navigator.onLine) {
-            showStreetViewOfflineState();
-        } else {
-            loader.style.display = 'none';
-        }
-    }, 6000);
+        loader.style.display = 'none';
+    }, 5000);
 
     requestAnimationFrame(() => {
         frame.src = embedUrl;
@@ -1179,15 +1107,9 @@ window.closeStreetView = () => {
         streetViewTimeout = null;
     }
     const frame = document.getElementById('streetViewFrame');
-    const loader = document.getElementById('streetViewLoading');
-    const retryBtn = document.getElementById('streetViewRetryBtn');
     frame.onload = null;
-    frame.onerror = null;
-    frame.classList.remove('offline-hidden');
     frame.src = 'about:blank';
-    loader.style.display = 'none';
-    loader.classList.remove('interactive');
-    retryBtn.style.display = 'none';
+    document.getElementById('streetViewLoading').style.display = 'none';
     document.getElementById('streetViewModal').style.display = 'none';
 };
 
@@ -1222,9 +1144,9 @@ function renderFleetUI() {
                 <div>Velocity: <b>${carSpd} km/h</b></div>
             </div>
             <div class="grid-3">
-                <button onclick="window.selectCar('${car.name}')" class="${isSelected ? 'btn-green' : 'btn-primary'}" style="padding:5px; font-size:8.5px;">${isSelected ? 'ACTIVE' : 'SELECT'}</button>
-                <button onclick="window.focusCar('${car.name}')" style="background:var(--saxo-slate); padding:5px; font-size:8.5px;">FOCUS</button>
-                <button onclick="window.requestRemoveFleetCar('${car.name}')" class="btn-red" style="padding:5px; font-size:8.5px;">REMOVE</button>
+                <button onclick="window.selectCar('${car.name}')" class="${isSelected ? 'btn-green' : 'btn-primary'}" style="padding:6px; font-size:9px;">${isSelected ? 'ACTIVE' : 'SELECT'}</button>
+                <button onclick="window.focusCar('${car.name}')" style="background:var(--saxo-slate); padding:6px; font-size:9px;">FOCUS</button>
+                <button onclick="window.requestRemoveFleetCar('${car.name}')" class="btn-red" style="padding:6px; font-size:9px;">REMOVE</button>
             </div>
         `;
         container.appendChild(card);
@@ -1413,7 +1335,7 @@ window.switchMap = v => {
     layers[v].addTo(map);
     applyThemeMode();
 };
-window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="Follow car: OFF"; } };
+window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="Follow selected car: OFF"; } };
 
 window.secureSearchPlace = () => {
     const q = document.getElementById('search').value.trim();
@@ -1543,7 +1465,7 @@ document.getElementById('hoverBtn').onclick = () => document.getElementById('pan
 
 document.getElementById('followBtn').onclick = function() {
     follow = !follow;
-    this.innerText = `Follow car: ${follow ? 'ON' : 'OFF'}`;
+    this.innerText = `Follow selected car: ${follow ? 'ON' : 'OFF'}`;
     if (follow) {
         routeLocked = false;
         document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
@@ -1561,7 +1483,7 @@ document.getElementById('lockRouteBtn').onclick = function() {
     this.innerText = `LOCK: ${routeLocked ? 'ON' : 'OFF'}`;
     if (routeLocked) {
         follow = false;
-        document.getElementById('followBtn').innerText = "Follow car: OFF";
+        document.getElementById('followBtn').innerText = "Follow selected car: OFF";
         if (selectedCarName && carLatestData[selectedCarName] && destMarker) {
             map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]});
         }
