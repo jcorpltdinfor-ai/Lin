@@ -712,6 +712,21 @@ const historyLayer = L.layerGroup().addTo(map);
 let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = false;
 let routeLine = null, routeFencePolyline = null, destMarker = null, fenceCircle = null, activeMarker = null, lastPushTime = 0;
 let lastDestKey = "";
+let lastRouteOrigin = null;
+let lastAreaSpeedPos = null;
+let isFetchingRoute = false;
+
+function setFollowState(nextFollow) {
+    follow = !!nextFollow;
+    const followBtn = document.getElementById('followBtn');
+    if (followBtn) followBtn.innerText = `Follow selected car: ${follow ? 'ON' : 'OFF'}`;
+}
+
+map.on('dragstart', () => {
+    if (follow) {
+        setFollowState(false);
+    }
+});
 
 // --- INSTANT OFFLINE BANNER & REFRESH ---
 function updateNetworkUI() {
@@ -976,8 +991,9 @@ window.selectCar = (name) => {
     selectedCarName = name;
     localStorage.setItem(STORAGE_SELECTED_KEY, name);
     lastDestKey = "";
-    follow = true;
-    document.getElementById('followBtn').innerText = "Follow selected car: ON";
+    lastRouteOrigin = null;
+    lastAreaSpeedPos = null;
+    setFollowState(true);
     routeLocked = false;
     document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
     
@@ -1003,36 +1019,43 @@ window.selectCar = (name) => {
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
     const data = carLatestData[name];
-    if(data && data.lat && data.lng) {
-        const pos = [data.lat, data.lng];
-        const spd = (parseFloat(data.speed) || 0).toFixed(1);
-        
-        map.setView(pos, 18, { animate: true });
-        document.getElementById('spdVal').innerText = spd + " km/h";
-        document.getElementById('speedHud').innerText = spd + " KM/H";
-        
-        const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
-        activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
-            .bindTooltip(name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
-            .bindPopup(`<b>${name}</b><br>Speed: ${spd} km/h`);
+    if(data && data.lat != null && data.lng != null) {
+        const lat = parseFloat(data.lat);
+        const lng = parseFloat(data.lng);
+        if(!Number.isNaN(lat) && !Number.isNaN(lng)) {
+            const pos = [lat, lng];
+            const spd = (parseFloat(data.speed) || 0).toFixed(1);
+            
+            map.setView(pos, 18, { animate: true });
+            document.getElementById('spdVal').innerText = spd + " km/h";
+            document.getElementById('speedHud').innerText = spd + " KM/H";
+            
+            const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+            activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
+                .bindTooltip(name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+                .bindPopup(`<b>${name}</b><br>Speed: ${spd} km/h`);
 
-        const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
-        document.getElementById('statusHeader').className = online ? "online" : "offline";
-        document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+            const tsNum = Number(data.ts) || 0;
+            const online = navigator.onLine && ((Date.now() - tsNum) < 15000);
+            document.getElementById('statusHeader').className = online ? "online" : "offline";
+            document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
-        if(data.geofence) {
-            fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
+            if(data.geofence) {
+                fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
+            }
+            if(data.routeFence && data.routeFence.coords) {
+                routeFencePolyline = L.polyline(data.routeFence.coords, {color: '#fd7e14', weight: data.routeFence.weight || 15, opacity: 0.35, dashArray: '6, 12'}).addTo(map);
+            }
+            if(data.destination && data.destination.lat != null && data.destination.lng != null){
+                const dPos = [parseFloat(data.destination.lat), parseFloat(data.destination.lng)];
+                destMarker = L.marker(dPos).addTo(map);
+                lastDestKey = `${dPos[0]},${dPos[1]}`;
+                lastRouteOrigin = pos;
+                drawRoute(pos, dPos, false);
+            }
+            lastAreaSpeedPos = pos;
+            updateAreaSpeed(pos[0], pos[1]);
         }
-        if(data.routeFence) {
-            routeFencePolyline = L.polyline(data.routeFence.coords, {color: '#fd7e14', weight: data.routeFence.weight || 15, opacity: 0.35, dashArray: '6, 12'}).addTo(map);
-        }
-        if(data.destination){
-            const dPos = [data.destination.lat, data.destination.lng];
-            destMarker = L.marker(dPos).addTo(map);
-            lastDestKey = `${data.destination.lat},${data.destination.lng}`;
-            drawRoute(pos, dPos, false);
-        }
-        updateAreaSpeed(pos[0], pos[1]);
     }
 };
 
@@ -1040,13 +1063,12 @@ window.focusCar = (name) => {
     if(name !== selectedCarName) {
         window.selectCar(name);
     }
-    follow = true;
-    document.getElementById('followBtn').innerText = "Follow selected car: ON";
+    setFollowState(true);
     routeLocked = false;
     document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
 
-    if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
-        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18, { animate: true });
+    if(carLatestData[name] && carLatestData[name].lat != null && carLatestData[name].lng != null) {
+        map.setView([parseFloat(carLatestData[name].lat), parseFloat(carLatestData[name].lng)], 18, { animate: true });
     } else {
         window.showAlertModal("SIGNAL LOST", `Vehicle ${name} has not reported GPS coordinates yet.`);
     }
@@ -1054,12 +1076,11 @@ window.focusCar = (name) => {
 
 window.fitAllCars = () => {
     const points = Object.values(carLatestData)
-        .filter(d => d && d.lat && d.lng)
-        .map(d => [d.lat, d.lng]);
+        .filter(d => d && d.lat != null && d.lng != null && !Number.isNaN(parseFloat(d.lat)) && !Number.isNaN(parseFloat(d.lng)))
+        .map(d => [parseFloat(d.lat), parseFloat(d.lng)]);
     if(points.length > 0) {
         map.fitBounds(L.latLngBounds(points), {padding: [70, 70]});
-        follow = false;
-        document.getElementById('followBtn').innerText = "Follow selected car: OFF";
+        setFollowState(false);
     }
 };
 
@@ -1070,7 +1091,8 @@ window.openStreetView = () => {
         window.showAlertModal("NO VEHICLE SELECTED", "Select a vehicle with live GPS coordinates first.");
         return;
     }
-    const { lat, lng } = carLatestData[selectedCarName];
+    const lat = parseFloat(carLatestData[selectedCarName].lat);
+    const lng = parseFloat(carLatestData[selectedCarName].lng);
     if (!lat || !lng || (lat === 0 && lng === 0)) {
         window.showAlertModal("NO GPS SIGNAL", `No valid coordinates available for ${selectedCarName}.`);
         return;
@@ -1127,7 +1149,8 @@ function renderFleetUI() {
     fleet.forEach(car => {
         const data = carLatestData[car.name] || { speed: "0.0", ts: 0 };
         const carSpd = (parseFloat(data.speed) || 0).toFixed(1);
-        const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
+        const tsNum = Number(data.ts) || 0;
+        const online = navigator.onLine && ((Date.now() - tsNum) < 15000);
         const isSelected = (car.name === selectedCarName);
         
         const card = document.createElement('div');
@@ -1225,105 +1248,125 @@ function initFirebaseSync() {
 
         if (!selectedCarName && fleet.length > 0) {
             window.selectCar(fleet[0].name);
+            return;
         } else if (selectedCarName && !fleet.some(c => c.name === selectedCarName) && fleet.length > 0) {
             window.selectCar(fleet[0].name);
+            return;
         }
 
         renderFleetUI();
 
         if (selectedCarName && allData[selectedCarName]) {
-            const data = allData[selectedCarName];
-            if (data.lat && data.lng) {
-                const pos = [data.lat, data.lng];
-                const spd = (parseFloat(data.speed) || 0).toFixed(1);
+            try {
+                const data = allData[selectedCarName];
+                if (data.lat != null && data.lng != null) {
+                    const lat = parseFloat(data.lat);
+                    const lng = parseFloat(data.lng);
+                    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-                document.getElementById('spdVal').innerText = spd + " km/h";
-                document.getElementById('speedHud').innerText = spd + " KM/H";
+                    const pos = [lat, lng];
+                    const spdNum = parseFloat(data.speed) || 0;
+                    const spd = spdNum.toFixed(1);
 
-                if (!activeMarker) {
-                    const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
-                    activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
-                        .bindTooltip(selectedCarName, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
-                        .bindPopup(`<b>${selectedCarName}</b><br>Speed: ${spd} km/h`);
-                } else {
-                    activeMarker.setLatLng(pos);
-                    activeMarker.setPopupContent(`<b>${selectedCarName}</b><br>Speed: ${spd} km/h`);
-                }
+                    document.getElementById('spdVal').innerText = spd + " km/h";
+                    document.getElementById('speedHud').innerText = spd + " KM/H";
 
-                if (mapRotationActive && activeMarker._lastPos) {
-                    const bearing = (Math.atan2(pos[1] - activeMarker._lastPos[1], pos[0] - activeMarker._lastPos[0]) * 180 / Math.PI);
-                    map.setBearing(bearing);
-                }
-                activeMarker._lastPos = pos;
-
-                if (activeLimit && parseFloat(spd) > activeLimit) {
-                    document.getElementById('speedHud').classList.add("blinking");
-                    window.sendPush("SPEED BREACH", selectedCarName);
-                } else { 
-                    document.getElementById('speedHud').classList.remove("blinking"); 
-                }
-
-                if (data.geofence) {
-                    if (!fenceCircle) fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
-                    else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
-                    const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
-                    fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
-                    if (d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", selectedCarName);
-                }
-
-                if (data.routeFence && data.routeFence.coords) {
-                    if (!routeFencePolyline) {
-                        routeFencePolyline = L.polyline(data.routeFence.coords, {color: '#fd7e14', weight: data.routeFence.weight || 15, opacity: 0.35, dashArray: '6, 12'}).addTo(map);
+                    if (!activeMarker) {
+                        const carIcon = L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/744/744465.png', iconSize:[40,40], iconAnchor:[20,20]});
+                        activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
+                            .bindTooltip(selectedCarName, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
+                            .bindPopup(`<b>${selectedCarName}</b><br>Speed: ${spd} km/h`);
                     } else {
-                        routeFencePolyline.setLatLngs(data.routeFence.coords);
+                        activeMarker.setLatLng(pos);
+                        activeMarker.setPopupContent(`<b>${selectedCarName}</b><br>Speed: ${spd} km/h`);
                     }
-                    if (routeLine && routeLine.getLatLngs) {
-                        const currentLatLng = L.latLng(pos);
-                        let minDst = 999999;
-                        routeLine.getLatLngs().forEach(pt => {
-                            const dst = currentLatLng.distanceTo(pt);
-                            if(dst < minDst) minDst = dst;
-                        });
-                        const maxAllowedBuffer = data.routeFence.bufferMeters || 150;
-                        if(minDst > maxAllowedBuffer) {
-                            window.sendPush("ROUTE DEVIATION BREACH", selectedCarName);
+
+                    if (mapRotationActive && activeMarker._lastPos) {
+                        const bearing = (Math.atan2(pos[1] - activeMarker._lastPos[1], pos[0] - activeMarker._lastPos[0]) * 180 / Math.PI);
+                        map.setBearing(bearing);
+                    }
+                    activeMarker._lastPos = pos;
+
+                    if (activeLimit && spdNum > activeLimit) {
+                        document.getElementById('speedHud').classList.add("blinking");
+                        window.sendPush("SPEED BREACH", selectedCarName);
+                    } else { 
+                        document.getElementById('speedHud').classList.remove("blinking"); 
+                    }
+
+                    if (data.geofence) {
+                        if (!fenceCircle) fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
+                        else { fenceCircle.setLatLng([data.geofence.lat, data.geofence.lng]); fenceCircle.setRadius(data.geofence.radius); }
+                        const d = L.latLng(pos).distanceTo(L.latLng(data.geofence.lat, data.geofence.lng));
+                        fenceCircle.setStyle({color: d > data.geofence.radius ? 'red' : '#00c07d'});
+                        if (d > data.geofence.radius) window.sendPush("GEOFENCE BREACH", selectedCarName);
+                    }
+
+                    if (data.routeFence && data.routeFence.coords) {
+                        if (!routeFencePolyline) {
+                            routeFencePolyline = L.polyline(data.routeFence.coords, {color: '#fd7e14', weight: data.routeFence.weight || 15, opacity: 0.35, dashArray: '6, 12'}).addTo(map);
+                        } else {
+                            routeFencePolyline.setLatLngs(data.routeFence.coords);
                         }
+                        if (routeLine && routeLine.getLatLngs) {
+                            const currentLatLng = L.latLng(pos);
+                            let minDst = 999999;
+                            routeLine.getLatLngs().forEach(pt => {
+                                const dst = currentLatLng.distanceTo(pt);
+                                if(dst < minDst) minDst = dst;
+                            });
+                            const maxAllowedBuffer = data.routeFence.bufferMeters || 150;
+                            if(minDst > maxAllowedBuffer) {
+                                window.sendPush("ROUTE DEVIATION BREACH", selectedCarName);
+                            }
+                        }
+                    } else {
+                        if (routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
                     }
-                } else {
-                    if (routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
-                }
 
-                const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
-                document.getElementById('statusHeader').className = online ? "online" : "offline";
-                document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
+                    const tsNum = Number(data.ts) || 0;
+                    const online = navigator.onLine && ((Date.now() - tsNum) < 15000);
+                    document.getElementById('statusHeader').className = online ? "online" : "offline";
+                    document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
-                if (follow) {
-                    map.panTo(pos);
-                }
-                
-                if (data.destination) {
-                    const dPos = [data.destination.lat, data.destination.lng];
-                    if (!destMarker) destMarker = L.marker(dPos).addTo(map);
-                    destMarker.setLatLng(dPos);
+                    if (routeLocked && data.destination && data.destination.lat != null && data.destination.lng != null) {
+                        const dPos = [parseFloat(data.destination.lat), parseFloat(data.destination.lng)];
+                        map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]});
+                    } else if (follow) {
+                        map.panTo(pos);
+                    }
                     
-                    const destKey = `${data.destination.lat},${data.destination.lng}`;
-                    const isNewDestination = (destKey !== lastDestKey);
-                    if (isNewDestination) {
-                        lastDestKey = destKey;
+                    if (data.destination && data.destination.lat != null && data.destination.lng != null) {
+                        const dPos = [parseFloat(data.destination.lat), parseFloat(data.destination.lng)];
+                        if (!destMarker) destMarker = L.marker(dPos).addTo(map);
+                        destMarker.setLatLng(dPos);
+                        
+                        const destKey = `${dPos[0]},${dPos[1]}`;
+                        const isNewDestination = (destKey !== lastDestKey);
+                        if (isNewDestination) {
+                            lastDestKey = destKey;
+                        }
+                        const movedEnoughForRoute = !lastRouteOrigin || L.latLng(pos).distanceTo(L.latLng(lastRouteOrigin)) > 25;
+                        if (isNewDestination || movedEnoughForRoute) {
+                            lastRouteOrigin = pos;
+                            drawRoute(pos, dPos, isNewDestination);
+                        }
+                    } else {
+                        lastDestKey = "";
+                        lastRouteOrigin = null;
+                        if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
+                        if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
+                        if(routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
+                        document.getElementById('etaDist').innerText = "-- / --";
                     }
-                    drawRoute(pos, dPos, isNewDestination);
 
-                    if (routeLocked) { 
-                        map.fitBounds(L.latLngBounds([pos, dPos]), {padding: [70, 70]}); 
+                    if (!lastAreaSpeedPos || L.latLng(pos).distanceTo(L.latLng(lastAreaSpeedPos)) > 60) {
+                        lastAreaSpeedPos = pos;
+                        updateAreaSpeed(pos[0], pos[1]);
                     }
-                } else {
-                    lastDestKey = "";
-                    if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
-                    if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
-                    if(routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
-                    document.getElementById('etaDist').innerText = "-- / --";
                 }
-                updateAreaSpeed(pos[0], pos[1]);
+            } catch (err) {
+                console.error("Live sync error:", err);
             }
         }
     });
@@ -1335,7 +1378,7 @@ window.switchMap = v => {
     layers[v].addTo(map);
     applyThemeMode();
 };
-window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); follow = false; document.getElementById('followBtn').innerText="Follow selected car: OFF"; } };
+window.centerDestination = () => { if(destMarker) { map.setView(destMarker.getLatLng(), 16); setFollowState(false); } };
 
 window.secureSearchPlace = () => {
     const q = document.getElementById('search').value.trim();
@@ -1370,6 +1413,7 @@ window.secureClearRoute = () => {
     }
     window.openAdminModal("AUTHORIZE CLEAR", `Clear active destination and route fence for ${selectedCarName}?`, () => {
         lastDestKey = "";
+        lastRouteOrigin = null;
         update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), { destination: null, routeFence: null });
         if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
         if(routeLine) { map.removeLayer(routeLine); routeLine = null; }
@@ -1381,21 +1425,29 @@ window.secureClearRoute = () => {
 };
 
 async function drawRoute(car, dest, updateFence = false){
-    const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${car[1]},${car[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`);
-    const d = await r.json();
-    if(d.routes && d.routes[0]){
-        if(routeLine) map.removeLayer(routeLine);
-        const coords = d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-        routeLine = L.polyline(coords, {color:'#00a3e0', weight:5}).addTo(map);
-        document.getElementById('etaDist').innerText = Math.round(d.routes[0].duration/60) + "m / " + (d.routes[0].distance/1000).toFixed(1) + "km";
-        
-        if(updateFence && selectedCarName && carLatestData[selectedCarName] && carLatestData[selectedCarName].routeFence) {
-            const existingFence = carLatestData[selectedCarName].routeFence;
-            const buffer = existingFence.bufferMeters || 150;
-            update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {
-                routeFence: { coords: coords, bufferMeters: buffer, weight: Math.max(10, buffer / 6) }
-            });
+    if (isFetchingRoute) return;
+    isFetchingRoute = true;
+    try {
+        const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${car[1]},${car[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`);
+        const d = await r.json();
+        if(d.routes && d.routes[0]){
+            if(routeLine) map.removeLayer(routeLine);
+            const coords = d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+            routeLine = L.polyline(coords, {color:'#00a3e0', weight:5}).addTo(map);
+            document.getElementById('etaDist').innerText = Math.round(d.routes[0].duration/60) + "m / " + (d.routes[0].distance/1000).toFixed(1) + "km";
+            
+            if(updateFence && selectedCarName && carLatestData[selectedCarName] && carLatestData[selectedCarName].routeFence) {
+                const existingFence = carLatestData[selectedCarName].routeFence;
+                const buffer = existingFence.bufferMeters || 150;
+                update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {
+                    routeFence: { coords: coords, bufferMeters: buffer, weight: Math.max(10, buffer / 6) }
+                });
+            }
         }
+    } catch (err) {
+        console.error("OSRM route error:", err);
+    } finally {
+        isFetchingRoute = false;
     }
 }
 
@@ -1464,15 +1516,14 @@ window.openSystemReset = () => { if(selectedCarName) window.openAdminModal("PURG
 document.getElementById('hoverBtn').onclick = () => document.getElementById('panel').classList.toggle('hidden');
 
 document.getElementById('followBtn').onclick = function() {
-    follow = !follow;
-    this.innerText = `Follow selected car: ${follow ? 'ON' : 'OFF'}`;
+    setFollowState(!follow);
     if (follow) {
         routeLocked = false;
         document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
         if (selectedCarName && carLatestData[selectedCarName]) {
             const data = carLatestData[selectedCarName];
-            if (data.lat && data.lng) {
-                map.setView([data.lat, data.lng], 18, { animate: true });
+            if (data.lat != null && data.lng != null) {
+                map.setView([parseFloat(data.lat), parseFloat(data.lng)], 18, { animate: true });
             }
         }
     }
@@ -1482,10 +1533,9 @@ document.getElementById('lockRouteBtn').onclick = function() {
     routeLocked = !routeLocked;
     this.innerText = `LOCK: ${routeLocked ? 'ON' : 'OFF'}`;
     if (routeLocked) {
-        follow = false;
-        document.getElementById('followBtn').innerText = "Follow selected car: OFF";
+        setFollowState(false);
         if (selectedCarName && carLatestData[selectedCarName] && destMarker) {
-            map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]});
+            map.fitBounds(L.latLngBounds([[parseFloat(carLatestData[selectedCarName].lat), parseFloat(carLatestData[selectedCarName].lng)], destMarker.getLatLng()]), {padding: [70, 70]});
         }
     }
 };
