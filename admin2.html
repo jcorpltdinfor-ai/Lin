@@ -1402,6 +1402,7 @@ async function updateAreaSpeed(lat, lng) {
 }
 
 function toMsTimestamp(ts) {
+    if (ts == null) return null;
     if (typeof ts === 'string' && Number.isNaN(Number(ts))) {
         const parsed = Date.parse(ts);
         return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
@@ -1490,6 +1491,12 @@ window.secureStartTrip = () => {
                 lng,
                 ts: nowMs
             });
+            await push(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${dateStr}`), {
+                lat,
+                lng,
+                speed: latest.speed != null ? parseFloat(latest.speed) : 0,
+                ts: nowMs
+            });
         }
 
         updateTripBanner();
@@ -1528,7 +1535,7 @@ window.secureEndTrip = () => {
     });
 };
 
-function analyzeHistoryPoints(rawPoints, mode = "day", tripStartTs = null, tripEndTs = null, stopMinMinutes = 1, jitterMaxMeters = 12) {
+function analyzeHistoryPoints(rawPoints, mode = "day", tripStartTs = null, tripEndTs = null, stopMinMinutes = 1, jitterMaxMeters = 12, liveCarData = null) {
     const container = rawPoints || {};
     const eventsObj = container.events || {};
     let startMs = toMsTimestamp(tripStartTs);
@@ -1547,23 +1554,38 @@ function analyzeHistoryPoints(rawPoints, mode = "day", tripStartTs = null, tripE
 
     const allValid = Object.entries(container)
         .filter(([k]) => k !== "events")
-        .map(([, p]) => p && ({
-            lat: parseFloat(p.lat),
-            lng: parseFloat(p.lng),
-            speed: p.speed != null ? parseFloat(p.speed) : null,
-            tsMs: toMsTimestamp(p.ts)
-        }))
-        .filter(p => p && !Number.isNaN(p.lat) && !Number.isNaN(p.lng) && p.tsMs !== null)
+        .map(([, p]) => {
+            if (!p || typeof p !== "object") return null;
+            const lat = parseFloat(p.lat);
+            const lng = parseFloat(p.lng);
+            if (Number.isNaN(lat) || Number.isNaN(lng) || (lat === 0 && lng === 0)) return null;
+            const tsMs = toMsTimestamp(p.ts) || Date.now();
+            return {
+                lat,
+                lng,
+                speed: p.speed != null ? parseFloat(p.speed) : null,
+                tsMs
+            };
+        })
+        .filter(Boolean)
         .sort((a, b) => a.tsMs - b.tsMs);
 
     let activePoints = allValid;
     let tripEnded = false;
 
     if (mode === "trip") {
-        if (startMs) {
-            activePoints = allValid.filter(p => p.tsMs >= startMs && (!endMs || p.tsMs <= endMs));
-        }
         tripEnded = !!(endMs && (!startMs || endMs >= startMs));
+        if (startMs) {
+            const windowPoints = allValid.filter(p => p.tsMs >= startMs && (!endMs || p.tsMs <= endMs));
+            if (windowPoints.length > 0) {
+                activePoints = windowPoints;
+            } else if (allValid.length > 0) {
+                const postStartPoints = allValid.filter(p => p.tsMs >= startMs - 30000);
+                activePoints = postStartPoints.length > 0 ? postStartPoints : allValid;
+            } else {
+                activePoints = [];
+            }
+        }
     } else if (endMs && (!startMs || endMs > startMs)) {
         const afterEnd = allValid.filter(p => p.tsMs > endMs);
         if (afterEnd.length > 0 && isTripRunningForCar({ tripStartTs: startMs, tripEndTs: endMs })) {
@@ -1572,6 +1594,24 @@ function analyzeHistoryPoints(rawPoints, mode = "day", tripStartTs = null, tripE
         } else {
             activePoints = allValid.filter(p => p.tsMs <= endMs);
             tripEnded = true;
+        }
+    }
+
+    if (mode === "trip" && !tripEnded && liveCarData && liveCarData.lat != null && liveCarData.lng != null) {
+        const liveLat = parseFloat(liveCarData.lat);
+        const liveLng = parseFloat(liveCarData.lng);
+        if (!Number.isNaN(liveLat) && !Number.isNaN(liveLng) && !(liveLat === 0 && liveLng === 0)) {
+            const liveTs = toMsTimestamp(liveCarData.ts) || Date.now();
+            const liveSpd = liveCarData.speed != null ? parseFloat(liveCarData.speed) : null;
+            const lastPt = activePoints[activePoints.length - 1];
+            if (!lastPt) {
+                activePoints = [{ lat: liveLat, lng: liveLng, speed: liveSpd, tsMs: Math.max(liveTs, startMs || liveTs) }];
+            } else {
+                const distFromLast = L.latLng(lastPt.lat, lastPt.lng).distanceTo(L.latLng(liveLat, liveLng));
+                if (distFromLast > 1 || liveTs > lastPt.tsMs) {
+                    activePoints = [...activePoints, { lat: liveLat, lng: liveLng, speed: liveSpd, tsMs: Math.max(liveTs, lastPt.tsMs + 1000) }];
+                }
+            }
         }
     }
 
@@ -1697,17 +1737,22 @@ function analyzeHistoryPoints(rawPoints, mode = "day", tripStartTs = null, tripE
 
 function getDateRangeStrings(startMs, endMs = Date.now()) {
     const dates = [];
-    const cursor = new Date(startMs);
+    const safeStart = Math.min(startMs, endMs);
+    const safeEnd = Math.max(startMs, endMs);
+    const cursor = new Date(safeStart);
     cursor.setHours(0, 0, 0, 0);
-    const limit = new Date(endMs);
+    const limit = new Date(safeEnd);
     limit.setHours(0, 0, 0, 0);
 
     let guard = 0;
     while (cursor <= limit && guard < 31) {
-        dates.push(getLocalDateString(cursor.getTime()));
+        const str = getLocalDateString(cursor.getTime());
+        if (!dates.includes(str)) dates.push(str);
         cursor.setDate(cursor.getDate() + 1);
         guard++;
     }
+    const todayStr = getLocalDateString(Date.now());
+    if (!dates.includes(todayStr)) dates.push(todayStr);
     return dates;
 }
 
@@ -1863,11 +1908,6 @@ function openHistoryReport(mode) {
     const startMs = toMsTimestamp(carData.tripStartTs);
     const endMs = toMsTimestamp(carData.tripEndTs);
 
-    if (mode === "trip" && !startMs) {
-        window.showAlertModal("NO TRIP STARTED", "Click START TRIP first to record a trip session.");
-        return;
-    }
-
     historyLayer.clearLayers();
 
     (async () => {
@@ -1876,8 +1916,9 @@ function openHistoryReport(mode) {
             let headerLabel = d || getLocalDateString(Date.now());
 
             if (mode === "trip") {
-                const rangeEndMs = (endMs && endMs >= startMs) ? endMs : Date.now();
-                const datesToFetch = getDateRangeStrings(startMs, rangeEndMs);
+                const effectiveStart = startMs || Date.now();
+                const rangeEndMs = (endMs && endMs >= effectiveStart) ? endMs : Date.now();
+                const datesToFetch = getDateRangeStrings(effectiveStart, rangeEndMs);
 
                 for (const dateKey of datesToFetch) {
                     const snap = await get(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${dateKey}`));
@@ -1886,16 +1927,43 @@ function openHistoryReport(mode) {
                         Object.entries(dayObj).forEach(([k, v]) => {
                             if (k === "events" && v && typeof v === "object") {
                                 combinedRaw.events = Object.assign(combinedRaw.events || {}, v);
-                            } else {
+                            } else if (v && typeof v === "object" && v.lat != null && v.lng != null) {
                                 combinedRaw[`${dateKey}_${k}`] = v;
+                            } else if (v && typeof v === "object") {
+                                Object.entries(v).forEach(([subK, subV]) => {
+                                    if (subV && typeof subV === "object" && subV.lat != null && subV.lng != null) {
+                                        combinedRaw[`${dateKey}_${k}_${subK}`] = subV;
+                                    }
+                                });
                             }
                         });
                     }
                 }
+
+                if (Object.keys(combinedRaw).length === 0) {
+                    const allHistSnap = await get(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history`));
+                    if (allHistSnap.exists()) {
+                        const histRoot = allHistSnap.val() || {};
+                        Object.entries(histRoot).forEach(([dateKey, dayObj]) => {
+                            if (dayObj && typeof dayObj === "object") {
+                                Object.entries(dayObj).forEach(([k, v]) => {
+                                    if (k === "events" && v && typeof v === "object") {
+                                        combinedRaw.events = Object.assign(combinedRaw.events || {}, v);
+                                    } else if (v && typeof v === "object" && v.lat != null && v.lng != null) {
+                                        combinedRaw[`${dateKey}_${k}`] = v;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
                 const running = isTripRunningForCar(carData);
-                headerLabel = running
-                    ? `TRIP (${getLocalDateString(startMs)} → ACTIVE)`
-                    : `TRIP (${getLocalDateString(startMs)} → ${getLocalDateString(rangeEndMs)})`;
+                headerLabel = !startMs
+                    ? `LIVE TRIP (${getLocalDateString(Date.now())})`
+                    : (running
+                        ? `TRIP (${getLocalDateString(startMs)} → ACTIVE)`
+                        : `TRIP (${getLocalDateString(startMs)} → ${getLocalDateString(rangeEndMs)})`);
             } else {
                 const snap = await get(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${d}`));
                 if (!snap.exists()) {
@@ -1906,7 +1974,7 @@ function openHistoryReport(mode) {
                 headerLabel = `DAY · ${d}`;
             }
 
-            const summary = analyzeHistoryPoints(combinedRaw, mode, carData.tripStartTs || null, carData.tripEndTs || null, 1, 12);
+            const summary = analyzeHistoryPoints(combinedRaw, mode, carData.tripStartTs || null, carData.tripEndTs || null, 1, 12, carData);
             if (!summary.points || summary.points.length === 0) {
                 window.showAlertModal("ARCHIVE EMPTY", `No recorded telemetry found for ${headerLabel}`);
                 return;
