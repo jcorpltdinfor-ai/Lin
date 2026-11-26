@@ -408,6 +408,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <div id="statusToast">SYSTEM ACTIVE</div>
 
+<!-- Floating Top Offline Pill & Refresh Button -->
 <div id="offline-pill" role="status" aria-live="polite">
   <span>⚠️ LOST NETWORK CONNECTION</span>
   <button type="button" class="offline-refresh-btn" onclick="window.retryConnection()">
@@ -415,10 +416,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </button>
 </div>
 
+<!-- Bottom Warning Strip -->
 <div id="offline-bar" role="status" aria-live="polite">
   ⚠️ LOST NETWORK CONNECTION
 </div>
 
+<!-- In-App Street View Overlay -->
 <div id="streetViewModal" role="dialog" aria-modal="true" aria-label="Street View">
     <div id="streetViewBar">
         <span id="streetViewTitle">STREET VIEW</span>
@@ -434,6 +437,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 </div>
 
+<!-- Modern Security Clearance Modal -->
 <div id="adminModal" class="tactical-modal">
     <div class="modal-box">
         <h3 id="modalTitle" style="margin:0 0 10px 0; color:var(--saxo-red); letter-spacing: 1px;">SECURITY CLEARANCE</h3>
@@ -446,6 +450,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 </div>
 
+<!-- Internal Security Settings Modal -->
 <div id="settingsModal" class="tactical-modal">
     <div class="modal-box" style="text-align: left; border-color: var(--saxo-blue); max-width: 380px; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
@@ -473,6 +478,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 </div>
 
+<!-- Logout Confirmation Modal -->
 <div id="logoutModal" class="tactical-modal">
     <div class="modal-box" style="border-color: var(--saxo-red);">
         <h3 style="margin:0 0 10px 0; color:var(--saxo-red); letter-spacing: 1px;">SESSION TERMINATION</h3>
@@ -484,6 +490,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 </div>
 
+<!-- System Notice Modal -->
 <div id="infoModal" class="tactical-modal">
     <div class="modal-box" style="border-color: var(--saxo-blue);">
         <h3 id="infoTitle" style="margin:0 0 10px 0; color:var(--saxo-blue);">SYSTEM NOTICE</h3>
@@ -492,6 +499,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 </div>
 
+<!-- Geofence Radius Modal -->
 <div id="fenceModal" class="tactical-modal">
     <div class="modal-box" style="border-color: var(--saxo-green);">
         <h3 style="margin:0 0 5px 0; color:var(--saxo-green);">GEOFENCE ENGINE</h3>
@@ -504,6 +512,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 </div>
 
+<!-- Route Fence Modal -->
 <div id="routeFenceModal" class="tactical-modal">
     <div class="modal-box" style="border-color: var(--saxo-orange);">
         <h3 style="margin:0 0 5px 0; color:var(--saxo-orange);">ROUTE CORRIDOR FENCE</h3>
@@ -524,7 +533,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <div id="panel">
   <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 5px 7px; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 7px; gap: 5px;">
-      <div style="font-size: 9px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">forexlin254@gmail_com</div>
+      <div style="font-size: 9px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">SESSION: ...</div>
       <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
           <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
               ↻ Refresh
@@ -639,7 +648,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, update, push, onValue, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3zyNPQibIk-XTrUcKGfQOfu0-td55SSM",
@@ -649,8 +658,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const safeEmail = "forexlin254@gmail_com";
-document.getElementById('sessionUserBadge').innerText = safeEmail;
+const getStoredEmail = () => {
+    const keys = ['ag_user_email', 'userEmail', 'currentUserEmail', 'email', 'logged_user', 'user', 'admin_email', 'username', 'account_email'];
+    for (let k of keys) {
+        const val = localStorage.getItem(k);
+        if (val && val.trim().length > 0) return val.trim().toLowerCase();
+    }
+    return 'default_user';
+};
+
+const currentUserEmail = getStoredEmail();
+const safeEmail = currentUserEmail.replace(/[.#$\[\]]/g, '_');
+document.getElementById('sessionUserBadge').innerText = currentUserEmail;
 
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
 const STORAGE_THEME_KEY = `ag_theme_mode_${safeEmail}`;
@@ -788,6 +807,7 @@ window.confirmLogout = () => {
     }, 1200);
 };
 
+// Internal Settings Modal Handlers
 window.openSettingsModal = () => {
     document.getElementById('settingsCurrentPass').value = '';
     document.getElementById('settingsNewPass').value = '';
@@ -799,6 +819,7 @@ window.resetInternalPinForm = () => {
     document.getElementById('settingsNewPass').value = '';
 };
 
+// Robust password verification function checking database and fallback local storage keys
 window.updateInternalPin = async () => {
     const currentPass = document.getElementById('settingsCurrentPass').value;
     const newPin = document.getElementById('settingsNewPass').value;
