@@ -101,6 +101,7 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 }
 #statusToast.show { top: 25px; }
 
+/* Floating Top Offline Pill & Refresh Button */
 #offline-pill {
     display: none;
     position: fixed;
@@ -138,8 +139,11 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     gap: 4px;
 }
 
-#offline-pill .offline-refresh-btn:hover { background: #dc2626; }
+#offline-pill .offline-refresh-btn:hover {
+    background: #dc2626;
+}
 
+/* Bottom Warning Strip (above #deadZone) */
 #offline-bar {
     display: none;
     position: fixed;
@@ -172,6 +176,7 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+/* In-App Street View Overlay */
 #streetViewModal {
     position: fixed;
     inset: 0;
@@ -242,7 +247,10 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     display: block;
     transition: opacity 0.2s ease;
 }
-#streetViewFrame.offline-hidden { opacity: 0; pointer-events: none; }
+#streetViewFrame.offline-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
 #streetViewLoading {
     position: absolute;
     inset: 0;
@@ -261,7 +269,9 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
     z-index: 3;
     pointer-events: none;
 }
-#streetViewLoading.interactive { pointer-events: auto; }
+#streetViewLoading.interactive {
+    pointer-events: auto;
+}
 #streetViewRetryBtn {
     width: auto;
     padding: 6px 14px;
@@ -320,10 +330,15 @@ input, select {
 input:focus { border-color: var(--saxo-blue); box-shadow: 0 0 0 3px rgba(0,163,224,0.15); }
 input:disabled { background: #e0e0e0; opacity: 0.5; color: #666 !important; }
 
-input[type="date"] { position: relative; cursor: pointer; font-family: 'Segoe UI', sans-serif; }
+input[type="date"] {
+    position: relative;
+    cursor: pointer;
+    font-family: 'Segoe UI', sans-serif;
+}
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
-    cursor: pointer; padding: 2px;
+    cursor: pointer;
+    padding: 2px;
 }
 
 #speedHud { position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 25px; border-radius: 50px; font-size: 24px; font-weight: 900; z-index: 1000; border: 2px solid var(--saxo-blue); pointer-events: none; }
@@ -334,28 +349,53 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #logDisplay { font-family: 'Consolas', monospace; font-size: 9px; background: var(--surface-subtle); padding: 7px; border-radius: 6px; margin-top: 8px; max-height: 70px; overflow-y: auto; color: var(--panel-text); opacity: 0.75; border: 1px inset var(--panel-border); }
 
 .fleet-card { 
-    background: var(--card-bg); border: 1px solid rgba(0, 163, 224, 0.25); 
-    border-radius: 10px; padding: 9px 10px; margin-bottom: 7px; font-size: 11px; 
-    transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    background: var(--card-bg); 
+    border: 1px solid rgba(0, 163, 224, 0.25); 
+    border-radius: 10px; 
+    padding: 9px 10px; 
+    margin-bottom: 7px; 
+    font-size: 11px; 
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
-.fleet-card:hover { border-color: var(--saxo-blue); box-shadow: 0 4px 12px rgba(0,163,224,0.12); }
+.fleet-card:hover {
+    border-color: var(--saxo-blue);
+    box-shadow: 0 4px 12px rgba(0,163,224,0.12);
+}
 .fleet-card.active-target { 
     border: 1.5px solid var(--saxo-green); 
     background: linear-gradient(135deg, rgba(0,192,125,0.12), rgba(0,30,60,0.06));
     box-shadow: 0 0 15px rgba(0,192,125,0.14); 
 }
 .fleet-card-header { 
-    display: flex; justify-content: space-between; align-items: center;
-    font-weight: 800; color: var(--card-text); margin-bottom: 5px; font-size: 11.5px;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    font-weight: 800; 
+    color: var(--card-text); 
+    margin-bottom: 5px; 
+    font-size: 11.5px;
 }
 .fleet-meta {
-    display: grid; grid-template-columns: 1fr; gap: 4px; font-size: 10px;
-    margin-bottom: 7px; color: var(--panel-text); opacity: 0.88;
-    background: var(--surface-subtle); padding: 5px 8px; border-radius: 6px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    font-size: 10px;
+    margin-bottom: 7px;
+    color: var(--panel-text);
+    opacity: 0.88;
+    background: var(--surface-subtle);
+    padding: 5px 8px;
+    border-radius: 6px;
 }
 .status-pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
 }
 .status-pill.live { background: rgba(0,192,125,0.15); color: #00a86b; }
 .status-pill.offline { background: rgba(255,90,95,0.15); color: var(--saxo-red); }
@@ -370,10 +410,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <div id="offline-pill" role="status" aria-live="polite">
   <span>⚠️ LOST NETWORK CONNECTION</span>
-  <button type="button" class="offline-refresh-btn" onclick="window.retryConnection()">↻ REFRESH</button>
+  <button type="button" class="offline-refresh-btn" onclick="window.retryConnection()">
+    ↻ REFRESH
+  </button>
 </div>
 
-<div id="offline-bar" role="status" aria-live="polite">⚠️ LOST NETWORK CONNECTION</div>
+<div id="offline-bar" role="status" aria-live="polite">
+  ⚠️ LOST NETWORK CONNECTION
+</div>
 
 <div id="streetViewModal" role="dialog" aria-modal="true" aria-label="Street View">
     <div id="streetViewBar">
@@ -482,7 +526,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 5px 7px; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 7px; gap: 5px;">
       <div style="font-size: 9px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">SESSION: ...</div>
       <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
-          <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">↻ Refresh</button>
+          <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
+              ↻ Refresh
+          </button>
           <button onclick="window.openSettingsModal()" title="Internal Security Settings" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,163,224,0.12); color: var(--saxo-blue); border: 1px solid rgba(0,163,224,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l-.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
@@ -504,7 +550,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="stat-row"><span>Velocity:</span> <b id="spdVal">0.0 km/h</b></div>
   <div class="stat-row"><span>Area Speed:</span> <b id="areaLimit" style="color:var(--saxo-red)">-- km/h</b></div>
   <div class="stat-row"><span>Route ETA:</span> <b id="etaDist">-- / --</b></div>
-  <div class="stat-row"><span>Last Packet:</span> <b id="lastSeenVal">--</b></div>
 
   <hr class="panel-divider">
 
@@ -594,7 +639,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, update, push, onValue, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3zyNPQibIk-XTrUcKGfQOfu0-td55SSM",
@@ -604,36 +649,34 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 60s window prevents false SIGNAL: LOST between background GPS intervals
-const ONLINE_WINDOW_MS = 60000;
-
-const sanitizeUserKey = (raw) => {
+const sanitizeUser = (raw) => {
     const cleaned = (raw || "").trim().toLowerCase().replace(/[@.#$\[\]\s]+/g, '_');
     return cleaned || 'default_user';
 };
 
-const getStoredUserKey = () => {
+const getStoredEmail = () => {
     const params = new URLSearchParams(window.location.search);
     const paramUser = params.get('user');
-    if (paramUser && paramUser.trim().length > 0) {
-        return sanitizeUserKey(paramUser);
-    }
+    if (paramUser && paramUser.trim().length > 0) return paramUser.trim().toLowerCase();
+
     const keys = ['ag_user_email', 'userEmail', 'currentUserEmail', 'email', 'logged_user', 'user', 'admin_email', 'username', 'account_email'];
     for (let k of keys) {
         const val = localStorage.getItem(k);
-        if (val && val.trim().length > 0) return sanitizeUserKey(val);
+        if (val && val.trim().length > 0) return val.trim().toLowerCase();
     }
     return 'forexlin254@gmail_com';
 };
 
-const safeEmail = getStoredUserKey();
-document.getElementById('sessionUserBadge').innerText = safeEmail;
+const currentUserEmail = getStoredEmail();
+const safeEmail = sanitizeUser(currentUserEmail);
+document.getElementById('sessionUserBadge').innerText = currentUserEmail;
 
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
 const STORAGE_THEME_KEY = `ag_theme_mode_${safeEmail}`;
 
 let currentMapLayerKey = 'googleTraffic';
 
+// --- THEME TOGGLE (BRIGHT vs SYSTEM) ---
 const systemDarkMedia = window.matchMedia('(prefers-color-scheme: dark)');
 let themeMode = localStorage.getItem(STORAGE_THEME_KEY) === 'system' ? 'system' : 'bright';
 
@@ -662,6 +705,7 @@ systemDarkMedia.addEventListener('change', () => {
 });
 applyThemeMode();
 
+// --- APP REFRESH BUTTON ---
 window.refreshApp = () => {
     const toast = document.getElementById('statusToast');
     toast.innerText = "REFRESHING APP...";
@@ -671,8 +715,8 @@ window.refreshApp = () => {
 
 let fleet = [];
 let carLatestData = {};
-const urlCarParam = new URLSearchParams(window.location.search).get('car');
-let selectedCarName = (urlCarParam && urlCarParam.trim()) ? urlCarParam.trim() : (localStorage.getItem(STORAGE_SELECTED_KEY) || "");
+const urlCar = new URLSearchParams(window.location.search).get('car');
+let selectedCarName = (urlCar && urlCar.trim()) ? urlCar.trim() : (localStorage.getItem(STORAGE_SELECTED_KEY) || "");
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
@@ -682,7 +726,7 @@ const layers = {
 
 const map = L.map('map',{
     layers:[layers.googleTraffic],
-    center:[-0.29804, 36.05314],
+    center:[0,0],
     zoom:15,
     zoomControl:false,
     rotate: true,
@@ -696,58 +740,16 @@ let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = 
 let routeLine = null, routeFencePolyline = null, destMarker = null, fenceCircle = null, activeMarker = null, lastPushTime = 0;
 let lastDestKey = "";
 
-function isCarOnline(carData) {
-    if (!navigator.onLine || !carData) return false;
-    const ts = Number(carData.ts);
-    if (!ts || Number.isNaN(ts)) return false;
-    return (Date.now() - ts) < ONLINE_WINDOW_MS;
-}
-
-function formatAge(ts) {
-    const t = Number(ts);
-    if (!t || Number.isNaN(t)) return "--";
-    const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
-    if (sec < 60) return `${sec}s ago`;
-    const min = Math.floor(sec / 60);
-    return `${min}m ${sec % 60}s ago`;
-}
-
-function syncSignalStatusUI() {
-    const header = document.getElementById('statusHeader');
-    const lastSeenEl = document.getElementById('lastSeenVal');
-    if (!navigator.onLine) {
-        header.className = "offline";
-        header.innerText = "SIGNAL: LOST";
-        if (lastSeenEl) lastSeenEl.innerText = "OFFLINE";
-        return;
-    }
-    if (!selectedCarName || !carLatestData[selectedCarName]) {
-        header.className = "offline";
-        header.innerText = "FLEET: STANDBY";
-        if (lastSeenEl) lastSeenEl.innerText = "--";
-        return;
-    }
-    const data = carLatestData[selectedCarName];
-    const online = isCarOnline(data);
-    header.className = online ? "online" : "offline";
-    header.innerText = online ? "SIGNAL: LIVE" : "SIGNAL: STALE";
-    if (lastSeenEl) lastSeenEl.innerText = formatAge(data.ts);
-}
-
-// Re-evaluate live/stale status every 5 seconds even between Firebase packets
-setInterval(() => {
-    syncSignalStatusUI();
-    if (fleet.length > 0) renderFleetUI();
-}, 5000);
-
+// --- INSTANT OFFLINE BANNER & REFRESH ---
 function updateNetworkUI() {
     const isOffline = !navigator.onLine;
     const pill = document.getElementById('offline-pill');
     const bar = document.getElementById('offline-bar');
     if (pill) pill.style.display = isOffline ? 'flex' : 'none';
     if (bar) bar.style.display = isOffline ? 'block' : 'none';
-    syncSignalStatusUI();
     if (isOffline) {
+        document.getElementById('statusHeader').className = "offline";
+        document.getElementById('statusHeader').innerText = "SIGNAL: LOST";
         const svModal = document.getElementById('streetViewModal');
         if (svModal && svModal.style.display === 'flex') {
             showStreetViewOfflineState();
@@ -1019,18 +1021,19 @@ window.selectCar = (name) => {
     document.getElementById('speedHud').innerText = "0.0 KM/H";
     document.getElementById('areaLimit').innerText = "-- km/h";
     document.getElementById('etaDist').innerText = "-- / --";
-    document.getElementById('lastSeenVal').innerText = "--";
     document.getElementById('maxSpeedLimit').value = "";
     document.getElementById('maxSpeedLimit').disabled = false;
     document.getElementById('speedSetBtn').innerText = "SET";
     document.getElementById('speedHud').classList.remove("blinking");
+    document.getElementById('statusHeader').className = "offline";
+    document.getElementById('statusHeader').innerText = navigator.onLine ? "FLEET: STANDBY" : "SIGNAL: LOST";
 
     renderFleetUI();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
     const data = carLatestData[name];
-    if(data && data.lat != null && data.lng != null) {
-        const pos = [Number(data.lat), Number(data.lng)];
+    if(data && data.lat && data.lng) {
+        const pos = [data.lat, data.lng];
         const spd = (parseFloat(data.speed) || 0).toFixed(1);
         
         map.setView(pos, 18, { animate: true });
@@ -1041,6 +1044,10 @@ window.selectCar = (name) => {
         activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
             .bindTooltip(name, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
             .bindPopup(`<b>${name}</b><br>Speed: ${spd} km/h`);
+
+        const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
+        document.getElementById('statusHeader').className = online ? "online" : "offline";
+        document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
         if(data.geofence) {
             fenceCircle = L.circle([data.geofence.lat, data.geofence.lng], {radius: data.geofence.radius, color: '#00a3e0', fillOpacity: 0.1}).addTo(map);
@@ -1056,7 +1063,6 @@ window.selectCar = (name) => {
         }
         updateAreaSpeed(pos[0], pos[1]);
     }
-    syncSignalStatusUI();
 };
 
 window.focusCar = (name) => {
@@ -1068,8 +1074,8 @@ window.focusCar = (name) => {
     routeLocked = false;
     document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
 
-    if(carLatestData[name] && carLatestData[name].lat != null && carLatestData[name].lng != null) {
-        map.setView([Number(carLatestData[name].lat), Number(carLatestData[name].lng)], 18, { animate: true });
+    if(carLatestData[name] && carLatestData[name].lat && carLatestData[name].lng) {
+        map.setView([carLatestData[name].lat, carLatestData[name].lng], 18, { animate: true });
     } else {
         window.showAlertModal("SIGNAL LOST", `Vehicle ${name} has not reported GPS coordinates yet.`);
     }
@@ -1077,8 +1083,8 @@ window.focusCar = (name) => {
 
 window.fitAllCars = () => {
     const points = Object.values(carLatestData)
-        .filter(d => d && d.lat != null && d.lng != null)
-        .map(d => [Number(d.lat), Number(d.lng)]);
+        .filter(d => d && d.lat && d.lng)
+        .map(d => [d.lat, d.lng]);
     if(points.length > 0) {
         map.fitBounds(L.latLngBounds(points), {padding: [70, 70]});
         follow = false;
@@ -1113,7 +1119,7 @@ window.openStreetView = () => {
         return;
     }
     const { lat, lng } = carLatestData[selectedCarName];
-    if (lat == null || lng == null || (Number(lat) === 0 && Number(lng) === 0)) {
+    if (!lat || !lng || (lat === 0 && lng === 0)) {
         window.showAlertModal("NO GPS SIGNAL", `No valid coordinates available for ${selectedCarName}.`);
         return;
     }
@@ -1139,24 +1145,38 @@ window.openStreetView = () => {
     retryBtn.style.display = 'none';
     document.getElementById('streetViewModal').style.display = 'flex';
 
-    frame.onerror = () => { showStreetViewOfflineState(); };
+    frame.onerror = () => {
+        showStreetViewOfflineState();
+    };
+
     frame.onload = () => {
-        if (!navigator.onLine) { showStreetViewOfflineState(); return; }
+        if (!navigator.onLine) {
+            showStreetViewOfflineState();
+            return;
+        }
         if (streetViewTimeout) clearTimeout(streetViewTimeout);
         loader.style.display = 'none';
         retryBtn.style.display = 'none';
     };
 
     streetViewTimeout = setTimeout(() => {
-        if (!navigator.onLine) showStreetViewOfflineState();
-        else loader.style.display = 'none';
+        if (!navigator.onLine) {
+            showStreetViewOfflineState();
+        } else {
+            loader.style.display = 'none';
+        }
     }, 6000);
 
-    requestAnimationFrame(() => { frame.src = embedUrl; });
+    requestAnimationFrame(() => {
+        frame.src = embedUrl;
+    });
 };
 
 window.closeStreetView = () => {
-    if (streetViewTimeout) { clearTimeout(streetViewTimeout); streetViewTimeout = null; }
+    if (streetViewTimeout) {
+        clearTimeout(streetViewTimeout);
+        streetViewTimeout = null;
+    }
     const frame = document.getElementById('streetViewFrame');
     const loader = document.getElementById('streetViewLoading');
     const retryBtn = document.getElementById('streetViewRetryBtn');
@@ -1184,7 +1204,7 @@ function renderFleetUI() {
     fleet.forEach(car => {
         const data = carLatestData[car.name] || { speed: "0.0", ts: 0 };
         const carSpd = (parseFloat(data.speed) || 0).toFixed(1);
-        const online = isCarOnline(data);
+        const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
         const isSelected = (car.name === selectedCarName);
         
         const card = document.createElement('div');
@@ -1194,11 +1214,11 @@ function renderFleetUI() {
                 <span style="display:flex; align-items:center; gap:5px;">🚗 <b>${car.name}</b></span>
                 <div class="status-pill ${online ? 'live' : 'offline'}">
                     <span class="status-dot-mini"></span>
-                    <span>${online ? 'ONLINE' : 'STALE'}</span>
+                    <span>${online ? 'ONLINE' : 'OFFLINE'}</span>
                 </div>
             </div>
             <div class="fleet-meta">
-                <div>Velocity: <b>${carSpd} km/h</b> · Seen: <b>${formatAge(data.ts)}</b></div>
+                <div>Velocity: <b>${carSpd} km/h</b></div>
             </div>
             <div class="grid-3">
                 <button onclick="window.selectCar('${car.name}')" class="${isSelected ? 'btn-green' : 'btn-primary'}" style="padding:5px; font-size:8.5px;">${isSelected ? 'ACTIVE' : 'SELECT'}</button>
@@ -1271,31 +1291,27 @@ function initFirebaseSync() {
             fleet = [];
             carLatestData = {};
             renderFleetUI();
-            syncSignalStatusUI();
             return;
         }
 
         carLatestData = allData;
         fleet = Object.keys(allData).map(carName => ({
             name: carName,
-            subId: (allData[carName] && allData[carName].subId) || ""
+            subId: allData[carName].subId || ""
         }));
 
         if (!selectedCarName && fleet.length > 0) {
             window.selectCar(fleet[0].name);
         } else if (selectedCarName && !fleet.some(c => c.name === selectedCarName) && fleet.length > 0) {
-            // Try matching space vs underscore variant before falling back
-            const altMatch = fleet.find(c => c.name.replace(/\s+/g, '_') === selectedCarName.replace(/\s+/g, '_'));
-            window.selectCar(altMatch ? altMatch.name : fleet[0].name);
+            window.selectCar(fleet[0].name);
         }
 
         renderFleetUI();
-        syncSignalStatusUI();
 
         if (selectedCarName && allData[selectedCarName]) {
             const data = allData[selectedCarName];
-            if (data.lat != null && data.lng != null) {
-                const pos = [Number(data.lat), Number(data.lng)];
+            if (data.lat && data.lng) {
+                const pos = [data.lat, data.lng];
                 const spd = (parseFloat(data.speed) || 0).toFixed(1);
 
                 document.getElementById('spdVal').innerText = spd + " km/h";
@@ -1306,7 +1322,6 @@ function initFirebaseSync() {
                     activeMarker = L.marker(pos, {icon: carIcon}).addTo(map)
                         .bindTooltip(selectedCarName, {permanent: true, direction: 'top', className: 'car-plate-tooltip', offset: [0, -10]})
                         .bindPopup(`<b>${selectedCarName}</b><br>Speed: ${spd} km/h`);
-                    map.setView(pos, 17, { animate: true });
                 } else {
                     activeMarker.setLatLng(pos);
                     activeMarker.setPopupContent(`<b>${selectedCarName}</b><br>Speed: ${spd} km/h`);
@@ -1354,6 +1369,10 @@ function initFirebaseSync() {
                 } else {
                     if (routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
                 }
+
+                const online = navigator.onLine && ((Date.now() - data.ts) < 15000);
+                document.getElementById('statusHeader').className = online ? "online" : "offline";
+                document.getElementById('statusHeader').innerText = online ? "SIGNAL: LIVE" : "SIGNAL: LOST";
 
                 if (follow) {
                     map.panTo(pos);
@@ -1529,8 +1548,8 @@ document.getElementById('followBtn').onclick = function() {
         document.getElementById('lockRouteBtn').innerText = "LOCK: OFF";
         if (selectedCarName && carLatestData[selectedCarName]) {
             const data = carLatestData[selectedCarName];
-            if (data.lat != null && data.lng != null) {
-                map.setView([Number(data.lat), Number(data.lng)], 18, { animate: true });
+            if (data.lat && data.lng) {
+                map.setView([data.lat, data.lng], 18, { animate: true });
             }
         }
     }
@@ -1543,7 +1562,7 @@ document.getElementById('lockRouteBtn').onclick = function() {
         follow = false;
         document.getElementById('followBtn').innerText = "Follow car: OFF";
         if (selectedCarName && carLatestData[selectedCarName] && destMarker) {
-            map.fitBounds(L.latLngBounds([[Number(carLatestData[selectedCarName].lat), Number(carLatestData[selectedCarName].lng)], destMarker.getLatLng()]), {padding: [70, 70]});
+            map.fitBounds(L.latLngBounds([[carLatestData[selectedCarName].lat, carLatestData[selectedCarName].lng], destMarker.getLatLng()]), {padding: [70, 70]});
         }
     }
 };
