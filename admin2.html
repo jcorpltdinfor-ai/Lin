@@ -524,7 +524,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <div id="panel">
   <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); padding: 5px 7px; border-radius: 8px; border: 1px solid var(--panel-border); margin-bottom: 7px; gap: 5px;">
-      <div style="font-size: 9px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">SESSION: ...</div>
+      <div style="font-size: 9px; font-weight: 700; color: var(--saxo-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="sessionUserBadge">forexlin254_gmail_com</div>
       <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
           <button onclick="window.refreshApp()" title="Refresh App" style="width: auto; padding: 4px 6px; font-size: 9px; font-weight: 700; background: rgba(0,192,125,0.14); color: #00a86b; border: 1px solid rgba(0,192,125,0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
               ↻ Refresh
@@ -639,7 +639,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, update, push, onValue, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC3zyNPQibIk-XTrUcKGfQOfu0-td55SSM",
@@ -649,27 +649,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const sanitizeUser = (raw) => {
-    const cleaned = (raw || "").trim().toLowerCase().replace(/[@.#$\[\]\s]+/g, '_');
-    return cleaned || 'default_user';
-};
-
-const getStoredEmail = () => {
-    const params = new URLSearchParams(window.location.search);
-    const paramUser = params.get('user');
-    if (paramUser && paramUser.trim().length > 0) return paramUser.trim().toLowerCase();
-
-    const keys = ['ag_user_email', 'userEmail', 'currentUserEmail', 'email', 'logged_user', 'user', 'admin_email', 'username', 'account_email'];
-    for (let k of keys) {
-        const val = localStorage.getItem(k);
-        if (val && val.trim().length > 0) return val.trim().toLowerCase();
-    }
-    return 'forexlin254@gmail_com';
-};
-
-const currentUserEmail = getStoredEmail();
-const safeEmail = sanitizeUser(currentUserEmail);
-document.getElementById('sessionUserBadge').innerText = currentUserEmail;
+const safeEmail = "forexlin254_gmail_com";
+document.getElementById('sessionUserBadge').innerText = safeEmail;
 
 const STORAGE_SELECTED_KEY = `ag_selected_car_${safeEmail}`;
 const STORAGE_THEME_KEY = `ag_theme_mode_${safeEmail}`;
@@ -715,8 +696,7 @@ window.refreshApp = () => {
 
 let fleet = [];
 let carLatestData = {};
-const urlCar = new URLSearchParams(window.location.search).get('car');
-let selectedCarName = (urlCar && urlCar.trim()) ? urlCar.trim() : (localStorage.getItem(STORAGE_SELECTED_KEY) || "");
+let selectedCarName = localStorage.getItem(STORAGE_SELECTED_KEY) || "";
 
 const layers = {
   googleTraffic: L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}),
