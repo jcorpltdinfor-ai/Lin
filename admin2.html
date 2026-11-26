@@ -176,6 +176,140 @@ html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;background:#111
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+/* Full-Screen History Page Overlay */
+#historyPage {
+    position: fixed;
+    inset: 0;
+    background: #0b1320;
+    color: #f1f5f9;
+    z-index: 22000;
+    display: none;
+    flex-direction: column;
+}
+#historyTopBar {
+    height: 54px;
+    background: var(--saxo-navy);
+    border-bottom: 1px solid var(--saxo-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    gap: 10px;
+    flex-shrink: 0;
+}
+#historyBackBtn {
+    width: auto;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--saxo-blue);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    flex-shrink: 0;
+}
+#historyPageTitle {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+#historyBody {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+#historyMap {
+    height: 46%;
+    min-height: 220px;
+    width: 100%;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    z-index: 1;
+}
+#historyReportScroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: #0b1320;
+}
+.hp-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.hp-stat-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 8px;
+    text-align: center;
+}
+.hp-stat-label {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--saxo-blue);
+    display: block;
+    margin-bottom: 2px;
+}
+.hp-stat-val {
+    font-size: 13px;
+    font-weight: 900;
+    color: #fff;
+}
+.hp-action-card {
+    width: 100%;
+    text-align: left;
+    background: rgba(0, 163, 224, 0.1);
+    color: #f1f5f9;
+    border: 1px solid rgba(0, 163, 224, 0.35);
+    border-left: 4px solid var(--saxo-green);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-size: 11px;
+    line-height: 1.45;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+.hp-action-card.farthest {
+    border-left-color: var(--saxo-blue);
+}
+.hp-action-card:hover {
+    border-color: #fff;
+}
+.hp-info-banner {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-size: 11px;
+    line-height: 1.45;
+    margin-bottom: 10px;
+}
+.hp-stop-card {
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.05);
+    color: #f1f5f9;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-left: 4px solid var(--saxo-red);
+    border-radius: 10px;
+    padding: 9px 11px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+.hp-stop-card:hover {
+    border-color: var(--saxo-blue);
+    border-left-color: var(--saxo-red);
+}
+
 /* In-App Street View Overlay */
 #streetViewModal {
     position: fixed;
@@ -400,6 +534,53 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   ⚠️ LOST NETWORK CONNECTION
 </div>
 
+<!-- Full-Screen History Page with Back Button -->
+<div id="historyPage" role="dialog" aria-modal="true" aria-label="History Report Page">
+    <div id="historyTopBar">
+        <button id="historyBackBtn" type="button" onclick="window.closeHistoryPage()">← BACK</button>
+        <span id="historyPageTitle">HISTORY ARCHIVE</span>
+    </div>
+    <div id="historyBody">
+        <div id="historyMap"></div>
+        <div id="historyReportScroll">
+            <div class="hp-grid-4">
+                <div class="hp-stat-card">
+                    <span class="hp-stat-label">Going (To Farthest)</span>
+                    <span id="hpGoingVal" class="hp-stat-val">-- km</span>
+                </div>
+                <div class="hp-stat-card">
+                    <span class="hp-stat-label">Coming Back</span>
+                    <span id="hpReturnVal" class="hp-stat-val">-- km</span>
+                </div>
+                <div class="hp-stat-card">
+                    <span class="hp-stat-label">Total Traveled</span>
+                    <span id="hpTotalVal" class="hp-stat-val">-- km</span>
+                </div>
+                <div class="hp-stat-card">
+                    <span class="hp-stat-label">Total Stopped</span>
+                    <span id="hpStopVal" class="hp-stat-val">-- min</span>
+                </div>
+            </div>
+
+            <button id="hpCurrentPosCard" type="button" class="hp-action-card">
+                <div><b>Status:</b> <span id="hpStatusText">--</span></div>
+                <div style="margin-top:2px;"><b>Current / Latest Position (<span id="hpLatestTime">--</span>):</b> 📍 <span id="hpLatestCoords">--</span></div>
+                <div style="font-size:9.5px; color:var(--saxo-green); margin-top:3px; font-weight:700;">Tap to view current/latest position on map →</div>
+            </button>
+
+            <button id="hpFarthestPosCard" type="button" class="hp-action-card farthest">
+                <div><b>Farthest Place (<span id="hpFarthestGoing">-- km</span>):</b> 📍 <span id="hpFarthestCoords">--</span></div>
+                <div style="font-size:9.5px; color:var(--saxo-blue); margin-top:3px; font-weight:700;">Tap to view farthest place on map →</div>
+            </button>
+
+            <div style="font-size:10px; font-weight:800; color:var(--saxo-blue); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px;">
+                Stops Breakdown (Duration &amp; Location)
+            </div>
+            <div id="hpStopsContainer"></div>
+        </div>
+    </div>
+</div>
+
 <!-- In-App Street View Overlay -->
 <div id="streetViewModal" role="dialog" aria-modal="true" aria-label="Street View">
     <div id="streetViewBar">
@@ -438,7 +619,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         </div>
         
         <div style="background: rgba(0, 163, 224, 0.1); border: 1px solid rgba(0, 163, 224, 0.3); border-radius: 8px; padding: 10px; font-size: 10px; line-height: 1.4; color: #bde4f4; margin-bottom: 15px;">
-            ℹ️ <b>Important Note:</b> The New Internal Security Password below is used exclusively for internal page actions (such as setting geo-fences, route corridors, registering/removing vehicles, and speed lock overrides), not your main account login.
+            ℹ️ <b>Important Note:</b> The New Internal Security Password below is used exclusively for internal page actions (such as setting geo-fences, route corridors, registering/removing vehicles, starting/ending trips, and speed lock overrides), not your main account login.
         </div>
 
         <div style="font-size: 9.5px; font-weight: 700; color: var(--saxo-blue); margin-bottom: 4px; text-transform: uppercase;">Current Account Login Password (to authorize change)</div>
@@ -579,12 +760,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
 
   <div class="control-group" style="margin-bottom:8px;">
-    <span class="control-label">History Archive (Selected Car)</span>
-    <input type="date" id="historyDate" style="margin-bottom:5px;">
-    <div class="grid-2">
-        <button id="historyBtn" class="btn-purple">RENDER</button>
-        <button onclick="window.clearHistoryMap()" style="background:#444">CLEAR</button>
+    <span class="control-label">History Archive &amp; Trip (Selected Car)</span>
+    <div id="tripSessionBanner" style="font-size:9.5px; font-weight:700; color:var(--saxo-blue); margin-bottom:6px;">Trip Status: Idle</div>
+    <div class="grid-2" style="margin-bottom:6px;">
+        <button onclick="window.secureStartTrip()" class="btn-green">START TRIP</button>
+        <button onclick="window.secureEndTrip()" class="btn-red">END TRIP</button>
     </div>
+    <input type="date" id="historyDate" style="margin-bottom:6px;">
+    <div class="grid-2" style="margin-bottom:6px;">
+        <button id="tripHistoryBtn" class="btn-purple">TRIP HISTORY</button>
+        <button id="dayHistoryBtn" class="btn-primary">DAY HISTORY</button>
+    </div>
+    <button onclick="window.clearHistoryMap()" style="background:#444">CLEAR HISTORY</button>
   </div>
 
   <div class="control-group" style="margin-bottom:10px;">
@@ -709,6 +896,15 @@ const map = L.map('map',{
 
 const historyLayer = L.layerGroup().addTo(map);
 
+// Dedicated map for the full-screen History Page
+const historyPageMap = L.map('historyMap', {
+    layers: [L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] })],
+    center: [0, 0],
+    zoom: 14,
+    zoomControl: true
+});
+const historyPageLayerGroup = L.layerGroup().addTo(historyPageMap);
+
 let follow = true, routeLocked = false, activeLimit = null, mapRotationActive = false;
 let routeLine = null, routeFencePolyline = null, destMarker = null, fenceCircle = null, activeMarker = null, lastPushTime = 0;
 let lastDestKey = "";
@@ -804,7 +1000,6 @@ window.resetInternalPinForm = () => {
     document.getElementById('settingsNewPass').value = '';
 };
 
-// Robust password verification function checking database and fallback local storage keys
 window.updateInternalPin = async () => {
     const currentPass = document.getElementById('settingsCurrentPass').value;
     const newPin = document.getElementById('settingsNewPass').value;
@@ -1002,7 +1197,7 @@ window.selectCar = (name) => {
     if(routeFencePolyline) { map.removeLayer(routeFencePolyline); routeFencePolyline = null; }
     if(destMarker) { map.removeLayer(destMarker); destMarker = null; }
     if(fenceCircle) { map.removeLayer(fenceCircle); fenceCircle = null; }
-    historyLayer.clearLayers();
+    window.clearHistoryMap();
 
     document.getElementById('spdVal').innerText = "0.0 km/h";
     document.getElementById('speedHud').innerText = "0.0 KM/H";
@@ -1016,6 +1211,7 @@ window.selectCar = (name) => {
     document.getElementById('statusHeader').innerText = navigator.onLine ? "FLEET: STANDBY" : "SIGNAL: LOST";
 
     renderFleetUI();
+    updateTripBanner();
     document.getElementById('activeTargetBanner').innerText = `ACTIVE TARGET: ${name}`;
     
     const data = carLatestData[name];
@@ -1205,29 +1401,541 @@ async function updateAreaSpeed(lat, lng) {
     } catch(e) { document.getElementById('areaLimit').innerText = "50.0 km/h"; }
 }
 
-document.getElementById('historyBtn').onclick = () => {
-    const d = document.getElementById('historyDate').value;
-    if(!d || !selectedCarName) {
-        window.showAlertModal("CALENDAR NOTICE", "Please select a valid date from the calendar archive.");
+function toMsTimestamp(ts) {
+    if (typeof ts === 'string' && Number.isNaN(Number(ts))) {
+        const parsed = Date.parse(ts);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    }
+    const num = Number(ts);
+    if (!Number.isFinite(num) || num <= 0) return null;
+    return num < 1e12 ? num * 1000 : num;
+}
+
+function formatDurationMinutes(totalMins) {
+    const mins = Math.max(1, Math.round(totalMins));
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
+}
+
+function formatClock(ms) {
+    return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function getLocalDateString(ms = Date.now()) {
+    const d = new Date(ms);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function isTripRunningForCar(carData) {
+    if (!carData) return false;
+    const startMs = toMsTimestamp(carData.tripStartTs);
+    if (!startMs) return false;
+    const endMs = toMsTimestamp(carData.tripEndTs);
+    return !endMs || endMs < startMs;
+}
+
+function updateTripBanner() {
+    const banner = document.getElementById('tripSessionBanner');
+    if (!banner) return;
+    if (!selectedCarName || !carLatestData[selectedCarName]) {
+        banner.innerText = "Trip Status: Idle";
+        banner.style.color = "var(--saxo-blue)";
         return;
     }
+    const carData = carLatestData[selectedCarName];
+    const startMs = toMsTimestamp(carData.tripStartTs);
+    const endMs = toMsTimestamp(carData.tripEndTs);
+
+    if (isTripRunningForCar(carData)) {
+        banner.innerText = `Trip Status: ACTIVE (Started ${formatClock(startMs)})`;
+        banner.style.color = "var(--saxo-green)";
+    } else if (endMs) {
+        banner.innerText = `Trip Status: ENDED (${formatClock(endMs)})`;
+        banner.style.color = "var(--saxo-red)";
+    } else {
+        banner.innerText = "Trip Status: Idle";
+        banner.style.color = "var(--saxo-blue)";
+    }
+}
+
+window.secureStartTrip = () => {
+    if (!selectedCarName) {
+        window.showAlertModal("TARGET REQUIRED", "Please select a vehicle first.");
+        return;
+    }
+    window.openAdminModal("START TRIP", `Enter internal security PIN to start trip for ${selectedCarName}?`, async () => {
+        const nowMs = Date.now();
+        const dateStr = getLocalDateString(nowMs);
+        const dateInput = document.getElementById('historyDate');
+        if (dateInput && !dateInput.value) dateInput.value = dateStr;
+
+        const latest = carLatestData[selectedCarName] || {};
+        const lat = latest.lat != null ? parseFloat(latest.lat) : null;
+        const lng = latest.lng != null ? parseFloat(latest.lng) : null;
+
+        await update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {
+            tripStartTs: nowMs,
+            tripStartDate: dateStr,
+            tripEndTs: null,
+            tripEndDate: null
+        });
+
+        if (lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+            await push(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${dateStr}/events`), {
+                type: "TRIP_START",
+                lat,
+                lng,
+                ts: nowMs
+            });
+        }
+
+        updateTripBanner();
+        window.showAlertModal("TRIP STARTED", `Trip started for ${selectedCarName} at ${formatClock(nowMs)}. It will track continuously until you click END TRIP.`);
+    });
+};
+
+window.secureEndTrip = () => {
+    if (!selectedCarName) {
+        window.showAlertModal("TARGET REQUIRED", "Please select a vehicle first.");
+        return;
+    }
+    window.openAdminModal("END ACTIVE TRIP", `Enter internal security PIN to end current trip for ${selectedCarName}?`, async () => {
+        const nowMs = Date.now();
+        const dateStr = document.getElementById('historyDate').value || getLocalDateString(nowMs);
+        const latest = carLatestData[selectedCarName] || {};
+        const lat = latest.lat != null ? parseFloat(latest.lat) : null;
+        const lng = latest.lng != null ? parseFloat(latest.lng) : null;
+
+        await update(ref(db, `users/${safeEmail}/cars/${selectedCarName}`), {
+            tripEndTs: nowMs,
+            tripEndDate: dateStr
+        });
+
+        if (lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+            await push(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${dateStr}/events`), {
+                type: "TRIP_END",
+                lat,
+                lng,
+                ts: nowMs
+            });
+        }
+
+        updateTripBanner();
+        window.showAlertModal("TRIP ENDED", `Trip ended for ${selectedCarName} at ${formatClock(nowMs)}. Farthest point and return distance remain recorded in history.`);
+    });
+};
+
+function analyzeHistoryPoints(rawPoints, mode = "day", tripStartTs = null, tripEndTs = null, stopMinMinutes = 1, jitterMaxMeters = 12) {
+    const container = rawPoints || {};
+    const eventsObj = container.events || {};
+    let startMs = toMsTimestamp(tripStartTs);
+    let endMs = toMsTimestamp(tripEndTs);
+
+    Object.values(eventsObj).forEach(ev => {
+        if (!ev) return;
+        const evMs = toMsTimestamp(ev.ts);
+        if (!evMs) return;
+        if (ev.type === "TRIP_START" && (!startMs || evMs > startMs)) {
+            startMs = evMs;
+        } else if (ev.type === "TRIP_END" && (!endMs || evMs > endMs)) {
+            endMs = evMs;
+        }
+    });
+
+    const allValid = Object.entries(container)
+        .filter(([k]) => k !== "events")
+        .map(([, p]) => p && ({
+            lat: parseFloat(p.lat),
+            lng: parseFloat(p.lng),
+            speed: p.speed != null ? parseFloat(p.speed) : null,
+            tsMs: toMsTimestamp(p.ts)
+        }))
+        .filter(p => p && !Number.isNaN(p.lat) && !Number.isNaN(p.lng) && p.tsMs !== null)
+        .sort((a, b) => a.tsMs - b.tsMs);
+
+    let activePoints = allValid;
+    let tripEnded = false;
+
+    if (mode === "trip") {
+        if (startMs) {
+            activePoints = allValid.filter(p => p.tsMs >= startMs && (!endMs || p.tsMs <= endMs));
+        }
+        tripEnded = !!(endMs && (!startMs || endMs >= startMs));
+    } else if (endMs && (!startMs || endMs > startMs)) {
+        const afterEnd = allValid.filter(p => p.tsMs > endMs);
+        if (afterEnd.length > 0 && isTripRunningForCar({ tripStartTs: startMs, tripEndTs: endMs })) {
+            activePoints = afterEnd;
+            tripEnded = false;
+        } else {
+            activePoints = allValid.filter(p => p.tsMs <= endMs);
+            tripEnded = true;
+        }
+    }
+
+    if (activePoints.length === 0) {
+        return {
+            points: [],
+            goingKm: "0.00",
+            returnKm: "0.00",
+            totalKm: "0.00",
+            stoppedMinutes: 0,
+            stopCount: 0,
+            stops: [],
+            farthestPoint: null,
+            latestPoint: null,
+            isReturning: false,
+            tripEnded
+        };
+    }
+
+    const startLL = L.latLng(activePoints[0].lat, activePoints[0].lng);
+    let farthestIndex = 0;
+    let maxDistFromStart = -1;
+
+    activePoints.forEach((pt, idx) => {
+        const dist = startLL.distanceTo(L.latLng(pt.lat, pt.lng));
+        if (dist >= maxDistFromStart) {
+            maxDistFromStart = dist;
+            farthestIndex = idx;
+        }
+    });
+
+    let goingMeters = 0;
+    let returnMeters = 0;
+    let stopMs = 0;
+    const rawStops = [];
+
+    for (let i = 1; i < activePoints.length; i++) {
+        const prev = activePoints[i - 1];
+        const curr = activePoints[i];
+        const dtMs = curr.tsMs - prev.tsMs;
+
+        if (dtMs <= 0) continue;
+
+        const segMeters = L.latLng(prev.lat, prev.lng).distanceTo(L.latLng(curr.lat, curr.lng));
+        const isPowerOffGap = dtMs > 15 * 60 * 1000 && segMeters > 25;
+
+        if (isPowerOffGap) {
+            if (i <= farthestIndex) {
+                goingMeters += segMeters;
+            } else {
+                returnMeters += segMeters;
+            }
+            continue;
+        }
+
+        const isStationary = segMeters <= jitterMaxMeters && ((curr.speed ?? 0) < 1);
+
+        if (isStationary) {
+            if (dtMs >= stopMinMinutes * 60 * 1000 && dtMs <= 6 * 60 * 60 * 1000) {
+                stopMs += dtMs;
+                rawStops.push({
+                    lat: curr.lat,
+                    lng: curr.lng,
+                    startMs: prev.tsMs,
+                    endMs: curr.tsMs,
+                    durationMs: dtMs
+                });
+            }
+        } else if (segMeters > 1) {
+            if (i <= farthestIndex) {
+                goingMeters += segMeters;
+            } else {
+                returnMeters += segMeters;
+            }
+        }
+    }
+
+    const mergedStops = [];
+    rawStops.forEach(item => {
+        const last = mergedStops[mergedStops.length - 1];
+        if (last && L.latLng(last.lat, last.lng).distanceTo(L.latLng(item.lat, item.lng)) <= 25 && (item.startMs - last.endMs) <= 10 * 60 * 1000) {
+            last.endMs = item.endMs;
+            last.durationMs += item.durationMs;
+            last.lat = item.lat;
+            last.lng = item.lng;
+        } else {
+            mergedStops.push({ ...item });
+        }
+    });
+
+    const stops = mergedStops.map((s, idx) => {
+        const mins = Math.max(1, Math.round(s.durationMs / 60000));
+        return {
+            index: idx + 1,
+            lat: s.lat,
+            lng: s.lng,
+            minutes: mins,
+            durationLabel: formatDurationMinutes(mins),
+            startTimeStr: formatClock(s.startMs),
+            endTimeStr: formatClock(s.endMs)
+        };
+    });
+
+    const latestPoint = activePoints[activePoints.length - 1];
+    const farthestPoint = activePoints[farthestIndex];
+    const isReturning = farthestIndex < activePoints.length - 1;
+    const totalMeters = goingMeters + returnMeters;
+
+    return {
+        points: activePoints,
+        goingKm: (goingMeters / 1000).toFixed(2),
+        returnKm: (returnMeters / 1000).toFixed(2),
+        totalKm: (totalMeters / 1000).toFixed(2),
+        stoppedMinutes: Math.round(stopMs / 60000),
+        stopCount: stops.length,
+        stops,
+        farthestPoint,
+        latestPoint,
+        isReturning,
+        tripEnded
+    };
+}
+
+function getDateRangeStrings(startMs, endMs = Date.now()) {
+    const dates = [];
+    const cursor = new Date(startMs);
+    cursor.setHours(0, 0, 0, 0);
+    const limit = new Date(endMs);
+    limit.setHours(0, 0, 0, 0);
+
+    let guard = 0;
+    while (cursor <= limit && guard < 31) {
+        dates.push(getLocalDateString(cursor.getTime()));
+        cursor.setDate(cursor.getDate() + 1);
+        guard++;
+    }
+    return dates;
+}
+
+window.focusHistoryPageLocation = (lat, lng, popupHtml) => {
+    historyPageMap.setView([lat, lng], 17, { animate: true });
+    L.popup().setLatLng([lat, lng]).setContent(popupHtml).openOn(historyPageMap);
+};
+
+window.closeHistoryPage = () => {
+    document.getElementById('historyPage').style.display = 'none';
+};
+
+function renderHistoryPage(labelStr, summary) {
+    document.getElementById('historyPageTitle').innerText = `${selectedCarName} · ${labelStr}`;
+    document.getElementById('hpGoingVal').innerText = `${summary.goingKm} km`;
+    document.getElementById('hpReturnVal').innerText = `${summary.returnKm} km`;
+    document.getElementById('hpTotalVal').innerText = `${summary.totalKm} km`;
+    document.getElementById('hpStopVal').innerText = `${summary.stoppedMinutes} min (${summary.stopCount})`;
+
+    const currentCard = document.getElementById('hpCurrentPosCard');
+    const farthestCard = document.getElementById('hpFarthestPosCard');
+    const statusTextEl = document.getElementById('hpStatusText');
+    const latestTimeEl = document.getElementById('hpLatestTime');
+    const latestCoordsEl = document.getElementById('hpLatestCoords');
+    const farthestGoingEl = document.getElementById('hpFarthestGoing');
+    const farthestCoordsEl = document.getElementById('hpFarthestCoords');
+
+    if (summary.latestPoint) {
+        const lLat = summary.latestPoint.lat.toFixed(5);
+        const lLng = summary.latestPoint.lng.toFixed(5);
+        const lTime = formatClock(summary.latestPoint.tsMs);
+        const statusLabel = summary.tripEnded
+            ? "Trip Ended"
+            : (summary.isReturning ? "Coming Back (In Progress)" : "Going / At Farthest Point");
+        statusTextEl.innerText = statusLabel;
+        latestTimeEl.innerText = lTime;
+        latestCoordsEl.innerText = `${lLat}, ${lLng}`;
+        currentCard.onclick = () => window.focusHistoryPageLocation(
+            summary.latestPoint.lat,
+            summary.latestPoint.lng,
+            `<b>Current / Latest Position (${lTime})</b><br>Status: ${statusLabel}<br>Coming Back Distance: ${summary.returnKm} km<br>Location: ${lLat}, ${lLng}`
+        );
+    } else {
+        statusTextEl.innerText = "No Data";
+        latestTimeEl.innerText = "--:--";
+        latestCoordsEl.innerText = `No points for ${labelStr}`;
+        currentCard.onclick = null;
+    }
+
+    if (summary.farthestPoint) {
+        const fLat = summary.farthestPoint.lat.toFixed(5);
+        const fLng = summary.farthestPoint.lng.toFixed(5);
+        farthestGoingEl.innerText = `${summary.goingKm} km`;
+        farthestCoordsEl.innerText = `${fLat}, ${fLng}`;
+        farthestCard.onclick = () => window.focusHistoryPageLocation(
+            summary.farthestPoint.lat,
+            summary.farthestPoint.lng,
+            `<b>Farthest Place</b><br>Going Distance: ${summary.goingKm} km<br>Location: ${fLat}, ${fLng}`
+        );
+    } else {
+        farthestGoingEl.innerText = "-- km";
+        farthestCoordsEl.innerText = "--";
+        farthestCard.onclick = null;
+    }
+
+    historyPageLayerGroup.clearLayers();
+    const pts = summary.points.map(p => [p.lat, p.lng]);
+
+    if (pts.length > 1) {
+        const poly = L.polyline(pts, { color: '#6c5ce7', weight: 5, opacity: 0.85 }).addTo(historyPageLayerGroup);
+        historyPageMap.fitBounds(poly.getBounds(), { padding: [35, 35] });
+    } else if (pts.length === 1) {
+        historyPageMap.setView(pts[0], 16);
+    }
+
+    if (summary.farthestPoint) {
+        const fLat = summary.farthestPoint.lat.toFixed(5);
+        const fLng = summary.farthestPoint.lng.toFixed(5);
+        L.circleMarker([summary.farthestPoint.lat, summary.farthestPoint.lng], {
+            radius: 7,
+            color: '#fff',
+            weight: 2,
+            fillColor: '#00a3e0',
+            fillOpacity: 0.95
+        })
+            .bindTooltip('Farthest Place', { direction: 'top' })
+            .bindPopup(`<b>Farthest Place</b><br>Going Distance: ${summary.goingKm} km<br>Location: ${fLat}, ${fLng}`)
+            .addTo(historyPageLayerGroup);
+    }
+
+    if (summary.latestPoint) {
+        const lLat = summary.latestPoint.lat.toFixed(5);
+        const lLng = summary.latestPoint.lng.toFixed(5);
+        const lTime = formatClock(summary.latestPoint.tsMs);
+        L.circleMarker([summary.latestPoint.lat, summary.latestPoint.lng], {
+            radius: 8,
+            color: '#fff',
+            weight: 2,
+            fillColor: '#00c07d',
+            fillOpacity: 0.95
+        })
+            .bindTooltip('Current / Latest Pos', { direction: 'top' })
+            .bindPopup(`<b>Current / Latest Position (${lTime})</b><br>Coming Back Distance: ${summary.returnKm} km<br>Location: ${lLat}, ${lLng}`)
+            .addTo(historyPageLayerGroup);
+    }
+
+    const stopsContainer = document.getElementById('hpStopsContainer');
+    stopsContainer.innerHTML = "";
+
+    if (summary.stops.length === 0) {
+        stopsContainer.innerHTML = `<div class="hp-info-banner" style="opacity:0.8;">No stops of 1+ minute recorded for ${labelStr}.</div>`;
+        return;
+    }
+
+    summary.stops.forEach(s => {
+        const coordsText = `${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}`;
+        const popupHtml = `<b>Stop #${s.index}</b><br>Time Spent: <b>${s.durationLabel}</b> (${s.startTimeStr} – ${s.endTimeStr})<br>Location: ${coordsText}`;
+
+        L.circleMarker([s.lat, s.lng], {
+            radius: 7,
+            color: '#fff',
+            weight: 2,
+            fillColor: '#ff5a5f',
+            fillOpacity: 0.95
+        })
+            .bindTooltip(`Stop #${s.index} (${s.durationLabel})`, { direction: 'top' })
+            .bindPopup(popupHtml)
+            .addTo(historyPageLayerGroup);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'hp-stop-card';
+        btn.innerHTML = `<div><b>Stop #${s.index}</b> · Time Spent: <b>${s.durationLabel}</b> (${s.startTimeStr} – ${s.endTimeStr})</div><div style="color:#bde4f4; margin-top:2px;">📍 Location: ${coordsText}</div>`;
+        btn.onclick = () => window.focusHistoryPageLocation(s.lat, s.lng, popupHtml);
+        stopsContainer.appendChild(btn);
+    });
+}
+
+function openHistoryReport(mode) {
+    if (!selectedCarName) {
+        window.showAlertModal("TARGET REQUIRED", "Please select a vehicle first.");
+        return;
+    }
+
+    const carData = carLatestData[selectedCarName] || {};
+    const d = document.getElementById('historyDate').value;
+
+    if (mode === "day" && !d) {
+        window.showAlertModal("CALENDAR NOTICE", "Please select a date for Day History.");
+        return;
+    }
+
+    const startMs = toMsTimestamp(carData.tripStartTs);
+    const endMs = toMsTimestamp(carData.tripEndTs);
+
+    if (mode === "trip" && !startMs) {
+        window.showAlertModal("NO TRIP STARTED", "Click START TRIP first to record a trip session.");
+        return;
+    }
+
     historyLayer.clearLayers();
 
-    onValue(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${d}`), (snap) => {
-        const val = snap.val();
-        if(!val) {
-            window.showAlertModal("ARCHIVE EMPTY", `No recorded telemetry found for ${d}`);
-            return;
+    (async () => {
+        try {
+            let combinedRaw = {};
+            let headerLabel = d || getLocalDateString(Date.now());
+
+            if (mode === "trip") {
+                const rangeEndMs = (endMs && endMs >= startMs) ? endMs : Date.now();
+                const datesToFetch = getDateRangeStrings(startMs, rangeEndMs);
+
+                for (const dateKey of datesToFetch) {
+                    const snap = await get(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${dateKey}`));
+                    if (snap.exists()) {
+                        const dayObj = snap.val() || {};
+                        Object.entries(dayObj).forEach(([k, v]) => {
+                            if (k === "events" && v && typeof v === "object") {
+                                combinedRaw.events = Object.assign(combinedRaw.events || {}, v);
+                            } else {
+                                combinedRaw[`${dateKey}_${k}`] = v;
+                            }
+                        });
+                    }
+                }
+                const running = isTripRunningForCar(carData);
+                headerLabel = running
+                    ? `TRIP (${getLocalDateString(startMs)} → ACTIVE)`
+                    : `TRIP (${getLocalDateString(startMs)} → ${getLocalDateString(rangeEndMs)})`;
+            } else {
+                const snap = await get(ref(db, `users/${safeEmail}/cars/${selectedCarName}/history/${d}`));
+                if (!snap.exists()) {
+                    window.showAlertModal("ARCHIVE EMPTY", `No recorded telemetry found for ${d}`);
+                    return;
+                }
+                combinedRaw = snap.val();
+                headerLabel = `DAY · ${d}`;
+            }
+
+            const summary = analyzeHistoryPoints(combinedRaw, mode, carData.tripStartTs || null, carData.tripEndTs || null, 1, 12);
+            if (!summary.points || summary.points.length === 0) {
+                window.showAlertModal("ARCHIVE EMPTY", `No recorded telemetry found for ${headerLabel}`);
+                return;
+            }
+
+            const pts = summary.points.map(p => [p.lat, p.lng]);
+            if (pts.length > 1) {
+                L.polyline(pts, { color: '#6c5ce7', weight: 5, opacity: 0.8, dashArray: '6,10' }).addTo(historyLayer);
+            }
+
+            document.getElementById('historyPage').style.display = 'flex';
+            setTimeout(() => {
+                historyPageMap.invalidateSize();
+                renderHistoryPage(headerLabel, summary);
+            }, 60);
+        } catch (err) {
+            console.error("History load error:", err);
+            window.showAlertModal("CONNECTION ERROR", "Failed to load history archive.");
         }
-        const pts = Object.values(val).sort((a,b)=>a.ts-b.ts).map(p=>[p.lat, p.lng]);
-        if(pts.length > 1){
-            const poly = L.polyline(pts, {color:'#6c5ce7', weight:5, opacity: 0.8, dashArray:'6,10'}).addTo(historyLayer);
-            map.fitBounds(poly.getBounds(), {padding:[50,50]});
-            window.showAlertModal("RENDER SUCCESS", `Trajectory loaded for ${d} (${pts.length} coordinate points highlighted).`);
-        }
-    }, {onlyOnce: true});
+    })();
+}
+
+document.getElementById('tripHistoryBtn').onclick = () => openHistoryReport("trip");
+document.getElementById('dayHistoryBtn').onclick = () => openHistoryReport("day");
+
+window.clearHistoryMap = () => {
+    historyLayer.clearLayers();
+    historyPageLayerGroup.clearLayers();
 };
-window.clearHistoryMap = () => { historyLayer.clearLayers(); };
 
 function initFirebaseSync() {
     const carsRef = ref(db, `users/${safeEmail}/cars`);
@@ -1237,6 +1945,7 @@ function initFirebaseSync() {
             fleet = [];
             carLatestData = {};
             renderFleetUI();
+            updateTripBanner();
             return;
         }
 
@@ -1255,6 +1964,7 @@ function initFirebaseSync() {
         }
 
         renderFleetUI();
+        updateTripBanner();
 
         if (selectedCarName && allData[selectedCarName]) {
             try {
